@@ -106,21 +106,34 @@ public class AmazonAI extends GamePlayer {
         }
 
         if (queens.isEmpty()) {
-            System.out.println("No queens found for AI to move.");
+            System.out.println("Game Over: No more queens left to move.");
+            return;
+        }
+
+        boolean hasMoves = false;
+        for (int[] q : queens) {
+            if (!getValidMoves(q[0], q[1]).isEmpty()) {
+                hasMoves = true;
+                break;
+            }
+        }
+
+        if (!hasMoves) {
+            System.out.println("Game Over: No possible moves left.");
             return;
         }
 
         int[] queen = queens.get(rand.nextInt(queens.size()));
         List<int[]> validMoves = getValidMoves(queen[0], queen[1]);
         if (validMoves.isEmpty()) {
-            System.out.println("No valid moves available for the selected queen.");
+            System.out.println("ERROR: No valid moves available for queen at " + Arrays.toString(queen));
             return;
         }
 
         int[] move = validMoves.get(rand.nextInt(validMoves.size()));
         List<int[]> arrowMoves = getValidMoves(move[0], move[1]);
         if (arrowMoves.isEmpty()) {
-            System.out.println("No valid arrow shots available.");
+            System.out.println("ERROR: No valid arrow shots available after moving to " + Arrays.toString(move));
             return;
         }
 
@@ -132,10 +145,12 @@ public class AmazonAI extends GamePlayer {
 
         System.out.println("Sending move: Queen from " + qcurr + " to " + qnew + " with arrow at " + arrowPos);
 
-        if (qnew == null || qnew.isEmpty()) {
-            System.err.println("Error: qnew (queen's new position) is NULL or empty!");
-            return;
-        }
+        Map<String, Object> moveMessage = new HashMap<>();
+        moveMessage.put("queen-position-current", qcurr);
+        moveMessage.put("queen-position-new", qnew);
+        moveMessage.put("arrow-position", arrowPos);
+
+        System.out.println("DEBUG: Sending move message -> " + moveMessage);
 
         gameClient.sendMoveMessage(qcurr, qnew, arrowPos);
 
