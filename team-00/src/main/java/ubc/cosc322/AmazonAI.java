@@ -2,6 +2,7 @@ package ubc.cosc322;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -48,6 +49,7 @@ public class AmazonAI extends GamePlayer {
     @Override
     public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
         System.out.println("Game message received ; Type: " + messageType);
+        System.out.println("Message Details: " + msgDetails);
 
         if (GameMessage.GAME_STATE_BOARD.equals(messageType)) {
             if (msgDetails.containsKey("game-state")) {
@@ -124,34 +126,25 @@ public class AmazonAI extends GamePlayer {
 
         int[] arrow = arrowMoves.get(rand.nextInt(arrowMoves.size()));
 
-        System.out.println("Moving queen from (" + queen[0] + ", " + queen[1] + ") to (" + move[0] + ", " + move[1] + ") and shooting arrow to (" + arrow[0] + ", " + arrow[1] + ")");
+        ArrayList<Integer> qcurr = new ArrayList<>(Arrays.asList(queen[0], queen[1]));
+        ArrayList<Integer> qnew = new ArrayList<>(Arrays.asList(move[0], move[1]));
+        ArrayList<Integer> arrowPos = new ArrayList<>(Arrays.asList(arrow[0], arrow[1]));
 
-        System.out.println("Attempting to send move...");
-        gameClient.sendMoveMessage(
-                new ArrayList<>(Arrays.asList(queen[0], queen[1])),
-                new ArrayList<>(Arrays.asList(move[0], move[1])),
-                new ArrayList<>(Arrays.asList(arrow[0], arrow[1]))
-        );
-        System.out.println("Move sent successfully.");
+        System.out.println("Sending move: Queen from " + qcurr + " to " + qnew + " with arrow at " + arrowPos);
 
-        // Update local board state
+        if (qnew == null || qnew.isEmpty()) {
+            System.err.println("Error: qnew (queen's new position) is NULL or empty!");
+            return;
+        }
+
+        gameClient.sendMoveMessage(qcurr, qnew, arrowPos);
+
         boardState[queen[0]][queen[1]] = 0;
         boardState[move[0]][move[1]] = 1;
         boardState[arrow[0]][arrow[1]] = 3;
 
         System.out.println("Updated Board After Move:");
         printBoard();
-
-        // Manually update the GUI to reflect the move
-        if (gameGUI != null) {
-            gameGUI.updateGameState(
-                    Map.of(
-                            "queen-position-current", Arrays.asList(queen[0], queen[1]),
-                            "queen-position-new", Arrays.asList(move[0], move[1]),
-                            "arrow-position", Arrays.asList(arrow[0], arrow[1])
-                    )
-            );
-        }
     }
 
     private List<int[]> getValidMoves(int row, int col) {
@@ -192,4 +185,3 @@ public class AmazonAI extends GamePlayer {
         gameClient = new GameClient(userName, passwd, this);
     }
 }
-///end of class
