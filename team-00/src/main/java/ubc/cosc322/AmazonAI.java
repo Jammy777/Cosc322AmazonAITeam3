@@ -192,3 +192,4 @@ public class AmazonAI extends GamePlayer {
         gameClient = new GameClient(userName, passwd, this);
     }
 }
+///end of class
