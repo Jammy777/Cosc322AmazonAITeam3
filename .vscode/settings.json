@@ -1,3 +1,19 @@
 {
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    
+    "java.configuration.runtimes": [
+        {
+          "name": "JavaSE-1.8",
+          "path": "/Library/Java/JavaVirtualMachines/zulu-8.jdk/Contents/Home",
+          "default": true
+        },
+        {
+          "name": "JavaSE-19",
+          "path": "/Library/Java/JavaVirtualMachines/jdk-19.jdk/Contents/Home"
+        },
+        {
+          "name": "JavaSE-23",
+          "path": "/Library/Java/JavaVirtualMachines/temurin-23.jdk/Contents/Home"
+        }
+      ]
 }

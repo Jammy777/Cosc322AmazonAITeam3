@@ -1,8 +1,8 @@
 package ubc.cosc322;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
+
 import ygraph.ai.smartfox.games.BaseGameGUI;
 import ygraph.ai.smartfox.games.GameClient;
 import ygraph.ai.smartfox.games.GameMessage;
