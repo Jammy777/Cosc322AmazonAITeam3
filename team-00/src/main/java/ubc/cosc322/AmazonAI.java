@@ -82,10 +82,11 @@ public class AmazonAI extends GamePlayer {
     private void printBoard() {
         System.out.println("Current Board State:");
         for (int i = 0; i < BOARD_SIZE; i++) {
+            StringBuilder row = new StringBuilder();
             for (int j = 0; j < BOARD_SIZE; j++) {
-                System.out.print(boardState[i][j] + " ");
+                row.append(boardState[i][j]).append(" ");
             }
-            System.out.println();
+            System.out.println(row.toString().trim()); // Trim ensures no trailing spaces
         }
     }
 
@@ -112,9 +113,20 @@ public class AmazonAI extends GamePlayer {
         ArrayList<Integer> qnew = (ArrayList<Integer>) move.get("queen-position-new");
         ArrayList<Integer> arrow = (ArrayList<Integer>) move.get("arrow-position");
 
+        // Remove the queen from its old position
         boardState[qcurr.get(0)][qcurr.get(1)] = 0;
+
+        // Place the queen in the new position
         boardState[qnew.get(0)][qnew.get(1)] = isBlack ? 2 : 1;
-        boardState[arrow.get(0)][arrow.get(1)] = 3;
+
+        // Check if the arrow placement is valid (ensure it does not overwrite a queen)
+        if (boardState[arrow.get(0)][arrow.get(1)] == 0) {
+            boardState[arrow.get(0)][arrow.get(1)] = 3;
+        } else {
+            System.out.println("WARNING: Arrow at " + arrow + " is overwriting something!");
+        }
+
+        System.out.println("Moving Queen: " + qcurr + " -> " + qnew);
     }
 
     @Override
