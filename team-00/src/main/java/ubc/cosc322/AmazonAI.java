@@ -1,6 +1,7 @@
 package ubc.cosc322;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import ygraph.ai.smartfox.games.BaseGameGUI;
@@ -9,35 +10,26 @@ import ygraph.ai.smartfox.games.GameMessage;
 import ygraph.ai.smartfox.games.GamePlayer;
 
 public class AmazonAI extends GamePlayer {
-    private GameClient gameClient;
-    private BaseGameGUI gameGUI;
-    private String userName;
-    private String passwd;
+    private GameClient gameClient=null;
+    private BaseGameGUI gameGUI=null;
+    private String userName=null;
+    private String passwd=null;
     private int[][] boardState;
     private final int BOARD_SIZE = 10;
     private boolean isBlack;
 
+
     public AmazonAI(String userName, String passwd) {
         this.userName = userName;
         this.passwd = passwd;
-        this.gameClient = new GameClient(userName, passwd, this);
         this.gameGUI = new BaseGameGUI(this);
+        this.gameClient = new GameClient(userName, passwd, (GamePlayer)this);
     }
 
-    public static void main(String[] args) {
-        AmazonAI player = new AmazonAI("AI_Player", "");
-
-        if (player.getGameGUI() == null) {
-            player.Go();
-        } else {
-            BaseGameGUI.sys_setup();
-            java.awt.EventQueue.invokeLater(player::Go);
-        }
-    }
 
     @Override
     public void onLogin() {
-        userName = gameClient.getUserName();
+        
         if (gameGUI != null) {
             gameGUI.setRoomInformation(gameClient.getRoomList());
         }
@@ -50,31 +42,44 @@ public class AmazonAI extends GamePlayer {
         System.out.println("Message Details: " + msgDetails);
 
         if (GameMessage.GAME_STATE_BOARD.equals(messageType)) {
-            if (msgDetails.containsKey("game-state")) {
+            
                 ArrayList<Integer> gameState = (ArrayList<Integer>) msgDetails.get("game-state");
 
                 if (gameState != null) {
                     boardState = new int[BOARD_SIZE][BOARD_SIZE];
                     for (int i = 0; i < BOARD_SIZE; i++) {
                         for (int j = 0; j < BOARD_SIZE; j++) {
-                            boardState[i][j] = gameState.get(i * BOARD_SIZE + j);
+                            boardState[i][j] = gameState.get((10-i)*11+j+1);
                         }
                     }
                     printBoard();
                     if (gameGUI != null) {
                         gameGUI.setGameState(gameState);
                     }
-                    makeMove();
+                    
                 }
-            }
+            
         } else if (GameMessage.GAME_ACTION_START.equals(messageType)) {
             isBlack = msgDetails.get("player-black").equals(userName);
+            if (!isBlack) {
+            	 
+            	makeMove();
+            	
+            }
         } else if (GameMessage.GAME_ACTION_MOVE.equals(messageType)) {
             System.out.println("Server acknowledged the move: " + msgDetails);
-            if (gameGUI != null && msgDetails.containsKey("move")) {
+            
                 gameGUI.updateGameState(msgDetails);
-            }
-            makeMove();
+                //big problem for TA here!!!!! (output)
+                System.out.println("Move from server: "+(ArrayList<Integer>) msgDetails.get("queen-position-current")+"\n"+
+                (ArrayList<Integer>) msgDetails.get("queen-position-new")+"\n"+
+                (ArrayList<Integer>) msgDetails.get("arrow-position"));
+            
+            
+            
+            	makeMove();
+            	
+            
         }
         return true;
     }
@@ -85,22 +90,27 @@ public class AmazonAI extends GamePlayer {
             for (int j = 0; j < BOARD_SIZE; j++) {
                 System.out.print(boardState[i][j] + " ");
             }
-            System.out.println();
+            System.out.println("\n");
         }
     }
 
     private void makeMove() {
         System.out.println("AI is making a move...");
+        
         Map<String, Object> move = MoveGenerator.generateMove(boardState, isBlack);
         if (move == null) {
-            System.out.println("No valid move found, game over.");
+            System.out.println("No valid move found, game over, called from makeMove in AI.");
+            
             return;
         }
-
+        ArrayList<Integer> adjustedQueenCurPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-current"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-current"))).get(1)+1));
+        ArrayList<Integer> adjustedQueenNewPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-new"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-new"))).get(1)+1));
+        ArrayList<Integer> adjustedArrowNewPos= new ArrayList<> (Arrays.asList(((ArrayList<Integer>) (move.get("arrow-position"))).get(0)+1, ((ArrayList<Integer>) (move.get("arrow-position"))).get(1)+1));
+        
         gameClient.sendMoveMessage(
-                (ArrayList<Integer>) move.get("queen-position-current"),
-                (ArrayList<Integer>) move.get("queen-position-new"),
-                (ArrayList<Integer>) move.get("arrow-position")
+        		adjustedQueenCurPos,
+        		adjustedQueenNewPos,
+        		adjustedArrowNewPos
         );
 
         updateBoardState(move);
