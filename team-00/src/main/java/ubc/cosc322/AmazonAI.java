@@ -2,6 +2,7 @@ package ubc.cosc322;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import ygraph.ai.smartfox.games.BaseGameGUI;
@@ -18,7 +19,34 @@ public class AmazonAI extends GamePlayer {
     private final int BOARD_SIZE = 10;
     private boolean isBlack;
 
+    public static void main(String[] args) {
+        // Create two instances of the AI bot to play against each other
+        Thread player1 = new Thread(() -> {
+            AmazonAI player = new AmazonAI("AI_Player_1", "");
+            if (player.getGameGUI() == null) {
+                player.Go();
+            } else {
+                BaseGameGUI.sys_setup();
+                java.awt.EventQueue.invokeLater(player::Go);
+            }
+            
+        });
+/// can make this one player by removing thread two - make it a comment
+        
+        Thread player2 = new Thread(() -> {
+            AmazonAI player = new AmazonAI("AI_Player_2", "");
+            if (player.getGameGUI() == null) {
+                player.Go();
+            } else {
+                BaseGameGUI.sys_setup();
+                java.awt.EventQueue.invokeLater(player::Go);
+            }
+       });
+        
 
+        player1.start();
+        player2.start();
+    }
     public AmazonAI(String userName, String passwd) {
         this.userName = userName;
         this.passwd = passwd;
@@ -68,17 +96,18 @@ public class AmazonAI extends GamePlayer {
             }
         } else if (GameMessage.GAME_ACTION_MOVE.equals(messageType)) {
             System.out.println("Server acknowledged the move: " + msgDetails);
-            
+            	updateBoardState(msgDetails, true);
                 gameGUI.updateGameState(msgDetails);
-                //big problem for TA here!!!!! (output)
+                
                 System.out.println("Move from server: "+(ArrayList<Integer>) msgDetails.get("queen-position-current")+"\n"+
-                (ArrayList<Integer>) msgDetails.get("queen-position-new")+"\n"+
+                (ArrayList<Integer>) msgDetails.get("queen-position-next")+"\n"+
                 (ArrayList<Integer>) msgDetails.get("arrow-position"));
             
             
             
-            	makeMove();
-            	
+                Map<String, Object> move=makeMove();
+                
+                if (move!=null) gameGUI.updateGameState(shiftPosUpByOne(move));
             
         }
         return true;
@@ -94,17 +123,18 @@ public class AmazonAI extends GamePlayer {
         }
     }
 
-    private void makeMove() {
+    private Map<String, Object> makeMove() {
         System.out.println("AI is making a move...");
         
         Map<String, Object> move = MoveGenerator.generateMove(boardState, isBlack);
         if (move == null) {
             System.out.println("No valid move found, game over, called from makeMove in AI.");
             
-            return;
+            return null;
         }
+        
         ArrayList<Integer> adjustedQueenCurPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-current"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-current"))).get(1)+1));
-        ArrayList<Integer> adjustedQueenNewPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-new"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-new"))).get(1)+1));
+        ArrayList<Integer> adjustedQueenNewPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-next"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-next"))).get(1)+1));
         ArrayList<Integer> adjustedArrowNewPos= new ArrayList<> (Arrays.asList(((ArrayList<Integer>) (move.get("arrow-position"))).get(0)+1, ((ArrayList<Integer>) (move.get("arrow-position"))).get(1)+1));
         
         gameClient.sendMoveMessage(
@@ -113,18 +143,25 @@ public class AmazonAI extends GamePlayer {
         		adjustedArrowNewPos
         );
 
-        updateBoardState(move);
+        updateBoardState(move, false);
         printBoard();
+        return move;
     }
 
-    private void updateBoardState(Map<String, Object> move) {
+    private void updateBoardState(Map<String, Object> move, boolean incomingMove) {
         ArrayList<Integer> qcurr = (ArrayList<Integer>) move.get("queen-position-current");
-        ArrayList<Integer> qnew = (ArrayList<Integer>) move.get("queen-position-new");
+        ArrayList<Integer> qnew = (ArrayList<Integer>) move.get("queen-position-next");
         ArrayList<Integer> arrow = (ArrayList<Integer>) move.get("arrow-position");
-
-        boardState[qcurr.get(0)][qcurr.get(1)] = 0;
-        boardState[qnew.get(0)][qnew.get(1)] = isBlack ? 2 : 1;
-        boardState[arrow.get(0)][arrow.get(1)] = 3;
+        if (incomingMove) {
+        	boardState[qcurr.get(0)-1][qcurr.get(1)-1] = 0;
+            boardState[qnew.get(0)-1][qnew.get(1)-1] = isBlack ? 2 : 1;
+            boardState[arrow.get(0)-1][arrow.get(1)-1] = 3;
+        }else {
+        	boardState[qcurr.get(0)][qcurr.get(1)] = 0;
+            boardState[qnew.get(0)][qnew.get(1)] = isBlack ? 1 : 2;
+            boardState[arrow.get(0)][arrow.get(1)] = 3;
+        }
+        
     }
 
     @Override
@@ -146,4 +183,15 @@ public class AmazonAI extends GamePlayer {
     public void connect() {
         gameClient = new GameClient(userName, passwd, this);
     }
-}
+    private Map<String, Object> shiftPosUpByOne(Map<String, Object> move){
+    	 ArrayList<Integer> adjustedQueenCurPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-current"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-current"))).get(1)+1));
+         ArrayList<Integer> adjustedQueenNewPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-next"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-next"))).get(1)+1));
+         ArrayList<Integer> adjustedArrowNewPos= new ArrayList<> (Arrays.asList(((ArrayList<Integer>) (move.get("arrow-position"))).get(0)+1, ((ArrayList<Integer>) (move.get("arrow-position"))).get(1)+1));
+         Map<String, Object> adjustedMap = new HashMap<String, Object>();      
+         adjustedMap.put("queen-position-current",adjustedQueenCurPos);
+         adjustedMap.put("queen-position-next",adjustedQueenNewPos);
+         adjustedMap.put("arrow-position",adjustedArrowNewPos);
+         return adjustedMap;
+         }
+    }
+

@@ -26,11 +26,11 @@ public class MoveGenerator {
         int[] move = validMoves.get(rand.nextInt(validMoves.size()));
         
         boardState[queen[0]][queen[1]] = 0;
-        boardState[move[0]][move[1]] = isBlack ? 2 : 1;
+        boardState[move[0]][move[1]] = isBlack ? 1 : 2;
 
         List<int[]> arrowMoves = getValidMoves(boardState, move[0], move[1]);
         if (arrowMoves.isEmpty()) {
-        	boardState[queen[0]][queen[1]] = isBlack ? 2 : 1;
+        	boardState[queen[0]][queen[1]] = isBlack ? 1 : 2;
             boardState[move[0]][move[1]] = 0;
             return null;
         }
@@ -47,7 +47,7 @@ public class MoveGenerator {
 
         Map<String, Object> moveMessage = new HashMap<>();
         moveMessage.put("queen-position-current", qcurr);
-        moveMessage.put("queen-position-new", qnew);
+        moveMessage.put("queen-position-next", qnew);
         moveMessage.put("arrow-position", arrowPos);
        
         return moveMessage;
@@ -55,7 +55,7 @@ public class MoveGenerator {
 
     private static List<int[]> findQueens(int[][] boardState, boolean isBlack) {
         List<int[]> queens = new ArrayList<>();
-        int queenValue = isBlack ? 2 : 1;
+        int queenValue = isBlack ? 1 : 2;
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
                 if (boardState[i][j] == queenValue) {
