@@ -1,0 +1,17 @@
+# Ignore VS Code files
+.vscode/
+
+# Eclipse project files
+.classpath
+.project
+.settings/
+
+# IntelliJ IDEA files
+.idea/
+*.iml
+
+# Maven build output
+target/
+
+# OS-specific files
+.DS_Store
