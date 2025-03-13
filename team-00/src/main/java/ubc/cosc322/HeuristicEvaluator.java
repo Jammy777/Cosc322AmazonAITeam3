@@ -108,6 +108,8 @@ class Board {
         List<Cell> moves = new ArrayList<>();
         Cell pos = amazon.getPosition();
         int x = pos.row, y = pos.col;
+        System.out.println("Checking legal moves for Amazon at: " + pos);
+    
         for (int d = 0; d < 8; d++) {
             int nx = x + dx[d], ny = y + dy[d];
             while (isWithinBounds(nx, ny) && grid[nx][ny] == 0) {
@@ -116,27 +118,53 @@ class Board {
                 ny += dy[d];
             }
         }
+    
+        System.out.println("Legal moves found: " + moves);
         return moves;
     }
     
-    public Set<Cell> floodFill(Cell start) {
+    public Set<Cell> floodFill(Cell start, int player) {
         Set<Cell> visited = new HashSet<>();
         Queue<Cell> queue = new LinkedList<>();
-        if (!isFree(start.row, start.col)) return visited;
+    
+        if (!isWithinBounds(start.row, start.col)) {
+            System.out.println("Flood-fill start position (" + start + ") is out of bounds.");
+            return visited;
+        }
+    
+        // Start position must be empty or occupied by the player
+        if (grid[start.row][start.col] != 0 && grid[start.row][start.col] != player) {
+            System.out.println("Flood-fill start position (" + start + ") is blocked or belongs to the opponent.");
+            return visited;
+        }
+    
         queue.add(start);
         visited.add(start);
-        while (!queue.isEmpty()){
+    
+        while (!queue.isEmpty()) {
             Cell current = queue.poll();
-            for (int d = 0; d < 8; d++){
-                int nx = current.row + dx[d], ny = current.col + dy[d];
-                if (isWithinBounds(nx, ny) && isFree(nx, ny)) {
+            
+            // Explore in all 8 directions
+            for (int d = 0; d < 8; d++) {
+                int nx = current.row, ny = current.col;
+                
+                // Move in a straight line until hitting an obstacle
+                while (true) {
+                    nx += dx[d];
+                    ny += dy[d];
+                    
                     Cell neighbor = new Cell(nx, ny);
+                    
+                    if (!isWithinBounds(nx, ny) || grid[nx][ny] != 0) break; // Stop at obstacles or other players
+                    
                     if (visited.add(neighbor)) {
                         queue.add(neighbor);
                     }
                 }
             }
         }
+    
+        System.out.println("Flood-fill completed for Player " + player + ". Total reachable cells: " + visited.size());
         return visited;
     }
     
@@ -163,36 +191,53 @@ class HeuristicEvaluator {
     
     public int evaluate(Board board, int player) {
         int opponent = (player == 1) ? 2 : 1;
-        
+    
         int mobilityScore = countLegalMoves(board, player) - countLegalMoves(board, opponent);
         int territoryScore = evaluateTerritory(board, player) - evaluateTerritory(board, opponent);
         int connectivityScore = evaluateConnectivity(board, player) - evaluateConnectivity(board, opponent);
         int queenDistanceScore = evaluateQueenDistances(board, opponent) - evaluateQueenDistances(board, player);
-        
+    
         int weightMobility = 3;
         int weightTerritory = 2;
         int weightConnectivity = 1;
         int weightDistance = 1;
+    
+        int finalScore = (weightMobility * mobilityScore) +
+                         (weightTerritory * territoryScore) +
+                         (weightConnectivity * connectivityScore) +
+                         (weightDistance * queenDistanceScore);
+    
+        // Debugging Output
+        System.out.println("Player " + player + " Scores:");
+        System.out.println("  Mobility Score: " + mobilityScore);
+        System.out.println("  Territory Score: " + territoryScore);
+        System.out.println("  Connectivity Score: " + connectivityScore);
+        System.out.println("  Queen Distance Score: " + queenDistanceScore);
+        System.out.println("  Final Heuristic Score: " + finalScore);
         
-        return (weightMobility * mobilityScore) +
-               (weightTerritory * territoryScore) +
-               (weightConnectivity * connectivityScore) +
-               (weightDistance * queenDistanceScore);
+        return finalScore;
     }
     
     private int countLegalMoves(Board board, int player) {
         int total = 0;
         for (Amazon amazon : board.getAmazons(player)) {
-            total += board.getLegalMoves(amazon).size();
+            List<Cell> moves = board.getLegalMoves(amazon);
+            System.out.println("Player " + player + " Amazon at " + amazon.getPosition() + " has " + moves.size() + " moves.");
+            total += moves.size();
         }
         return total;
     }
     
     private int evaluateTerritory(Board board, int player) {
         Set<Cell> reachable = new HashSet<>();
+    
         for (Amazon amazon : board.getAmazons(player)) {
-            reachable.addAll(board.floodFill(amazon.getPosition()));
+            Set<Cell> filledCells = board.floodFill(amazon.getPosition(), player);
+            System.out.println("Player " + player + " flood-fill from " + amazon.getPosition() + " covers: " + filledCells.size());
+            reachable.addAll(filledCells);
         }
+    
+        System.out.println("Total territory for Player " + player + ": " + reachable.size());
         return reachable.size();
     }
     
@@ -225,28 +270,5 @@ class HeuristicEvaluator {
             }
         }
         return totalDistance / count;
-    }
-}
-
-// Test harness for the heuristic evaluator.
-public class HeuristicEvaluatorTest {
-    public static void main(String[] args) {
-        Board board = new Board(10, 10);
-        board.setCell(0, 0, 1);
-        board.setCell(9, 9, 1);
-        board.setCell(0, 9, 2);
-        board.setCell(9, 0, 2);
-        board.setCell(4, 4, -1);
-        board.setCell(5, 5, -1);
-        
-        System.out.println("Board State:");
-        board.printBoard();
-        
-        HeuristicEvaluator evaluator = new HeuristicEvaluator();
-        int scorePlayer1 = evaluator.evaluate(board, 1);
-        int scorePlayer2 = evaluator.evaluate(board, 2);
-        
-        System.out.println("\nHeuristic score for Player 1: " + scorePlayer1);
-        System.out.println("Heuristic score for Player 2: " + scorePlayer2);
     }
 }

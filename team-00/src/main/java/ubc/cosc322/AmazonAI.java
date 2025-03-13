@@ -1,6 +1,7 @@
 package ubc.cosc322;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import ygraph.ai.smartfox.games.BaseGameGUI;
@@ -16,6 +17,7 @@ public class AmazonAI extends GamePlayer {
     private int[][] boardState;
     private final int BOARD_SIZE = 10;
     private boolean isBlack;
+    private List<Integer> moveScores = new ArrayList<>();
 
     public AmazonAI(String userName, String passwd) {
         this.userName = userName;
@@ -97,6 +99,12 @@ public class AmazonAI extends GamePlayer {
             return;
         }
 
+        // Retrieve move score
+        HeuristicEvaluator evaluator = new HeuristicEvaluator();
+        Board boardClone = new Board(cloneBoard(boardState));
+        int score = evaluator.evaluate(boardClone, isBlack ? 2 : 1);
+        moveScores.add(score);
+
         gameClient.sendMoveMessage(
                 (ArrayList<Integer>) move.get("queen-position-current"),
                 (ArrayList<Integer>) move.get("queen-position-new"),
@@ -115,6 +123,39 @@ public class AmazonAI extends GamePlayer {
         boardState[qcurr.get(0)][qcurr.get(1)] = 0;
         boardState[qnew.get(0)][qnew.get(1)] = isBlack ? 2 : 1;
         boardState[arrow.get(0)][arrow.get(1)] = 3;
+    }
+
+    private void analyzeMoveTrends() {
+        double avg = moveScores.stream().mapToInt(Integer::intValue).average().orElse(0);
+        double stdDev = Math.sqrt(moveScores.stream().mapToDouble(s -> Math.pow(s - avg, 2)).average().orElse(0));
+        
+        System.out.println("Move Score Analysis:");
+        System.out.println("Average Score: " + avg);
+        System.out.println("Standard Deviation: " + stdDev);
+        
+        if (moveScores.size() >= 10) {
+            int last5Avg = moveScores.subList(moveScores.size() - 5, moveScores.size()).stream()
+                                     .mapToInt(Integer::intValue).sum() / 5;
+            int first5Avg = moveScores.subList(0, 5).stream().mapToInt(Integer::intValue).sum() / 5;
+            
+            if (last5Avg > first5Avg + stdDev) {
+                System.out.println("AI's performance is improving.");
+            } else if (last5Avg < first5Avg - stdDev) {
+                System.out.println("AI's performance is declining.");
+            } else {
+                System.out.println("AI's performance is stable.");
+            }
+        }
+    }
+
+    private int[][] cloneBoard(int[][] boardState) {
+        int rows = boardState.length;
+        int cols = boardState[0].length;
+        int[][] copy = new int[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            System.arraycopy(boardState[i], 0, copy[i], 0, cols);
+        }
+        return copy;
     }
 
     @Override

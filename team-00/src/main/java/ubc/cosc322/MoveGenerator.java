@@ -19,18 +19,8 @@ public class MoveGenerator {
             return null;
         }
         
-        boolean hasMoves = false;
-        for (int[] q : queens) {
-            if (!getValidMoves(boardState, q[0], q[1]).isEmpty()) {
-                hasMoves = true;
-                break;
-            }
-        }
-        if (!hasMoves) {
-            System.out.println("Game Over: No possible moves left.");
-            return null;
-        }
-        
+        List<Integer> scores = new ArrayList<>();
+        Map<Map<String, Object>, Integer> moveScores = new HashMap<>();
         Map<String, Object> bestMove = null;
         int bestScore = Integer.MIN_VALUE;
         
@@ -38,43 +28,53 @@ public class MoveGenerator {
         for (int[] queen : queens) {
             List<int[]> queenMoves = getValidMoves(boardState, queen[0], queen[1]);
             for (int[] newQueenPos : queenMoves) {
-                // Clone board and simulate queen move.
                 int[][] boardAfterQueen = cloneBoard(boardState);
                 boardAfterQueen[queen[0]][queen[1]] = 0;
                 boardAfterQueen[newQueenPos[0]][newQueenPos[1]] = player;
                 
-                // Get arrow moves from new queen position.
                 List<int[]> arrowMoves = getValidMoves(boardAfterQueen, newQueenPos[0], newQueenPos[1]);
                 for (int[] arrowPos : arrowMoves) {
-                    // Clone board and simulate arrow shot.
                     int[][] boardAfterMove = cloneBoard(boardAfterQueen);
-                    boardAfterMove[arrowPos[0]][arrowPos[1]] = 3; // 3 represents a blocked cell.
-                    
+                    boardAfterMove[arrowPos[0]][arrowPos[1]] = 3;
+    
                     Board newBoard = new Board(boardAfterMove);
                     int score = evaluator.evaluate(newBoard, player);
+                    scores.add(score);
                     
+                    Map<String, Object> move = new HashMap<>();
+                    move.put("queen-position-current", Arrays.asList(queen[0], queen[1]));
+                    move.put("queen-position-new", Arrays.asList(newQueenPos[0], newQueenPos[1]));
+                    move.put("arrow-position", Arrays.asList(arrowPos[0], arrowPos[1]));
+                    
+                    moveScores.put(move, score);
+    
                     if (score > bestScore) {
                         bestScore = score;
-                        bestMove = new HashMap<>();
-                        ArrayList<Integer> qcurr = new ArrayList<>(Arrays.asList(queen[0], queen[1]));
-                        ArrayList<Integer> qnew = new ArrayList<>(Arrays.asList(newQueenPos[0], newQueenPos[1]));
-                        ArrayList<Integer> arrowList = new ArrayList<>(Arrays.asList(arrowPos[0], arrowPos[1]));
-                        bestMove.put("queen-position-current", qcurr);
-                        bestMove.put("queen-position-new", qnew);
-                        bestMove.put("arrow-position", arrowList);
+                        bestMove = move;
                     }
                 }
             }
         }
         
-        if (bestMove == null) {
-            return null;
-        }
+        if (bestMove == null) return null;
         
-        ArrayList<Integer> qcurr = (ArrayList<Integer>) bestMove.get("queen-position-current");
-        ArrayList<Integer> qnew = (ArrayList<Integer>) bestMove.get("queen-position-new");
-        ArrayList<Integer> arrowList = (ArrayList<Integer>) bestMove.get("arrow-position");
-        System.out.println("Selected move: Queen from " + qcurr + " to " + qnew + " with arrow at " + arrowList);
+        // Compute average score
+        double avgScore = scores.stream().mapToInt(Integer::intValue).average().orElse(0);
+        double stdDev = Math.sqrt(scores.stream().mapToDouble(s -> Math.pow(s - avgScore, 2)).average().orElse(0));
+        
+        for (Map.Entry<Map<String, Object>, Integer> entry : moveScores.entrySet()) {
+            Map<String, Object> move = entry.getKey();
+            int score = entry.getValue();
+            
+            String evaluation = "Neutral move.";
+            if (score > avgScore + stdDev) {
+                evaluation = "Good move.";
+            } else if (score < avgScore - stdDev) {
+                evaluation = "Bad move.";
+            }
+            
+            System.out.println("Move: " + move + " | Score: " + score + " | " + evaluation);
+        }
         
         return bestMove;
     }

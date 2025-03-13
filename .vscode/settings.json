@@ -15,5 +15,6 @@
           "name": "JavaSE-23",
           "path": "/Library/Java/JavaVirtualMachines/temurin-23.jdk/Contents/Home"
         }
-      ]
+      ],
+      "java.configuration.updateBuildConfiguration": "interactive"
 }
