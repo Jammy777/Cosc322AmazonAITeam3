@@ -1,7 +1,6 @@
 package ubc.cosc322;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,48 +10,63 @@ public class MoveGenerator {
     private static final int BOARD_SIZE = 10;
 
     public static Map<String, Object> generateMove(int[][] boardState, boolean isBlack) {
+        List<Map<String, Object>> allValidMoves = generateAllMoves(boardState, isBlack);
+        if (allValidMoves.isEmpty()) {
+            System.out.println("Game Over called from MoveGenerator: No valid moves available.");
+            return null;
+        }
+
         Random rand = new Random();
+        Map<String, Object> selectedMove = allValidMoves.get(rand.nextInt(allValidMoves.size()));
+        simulateMove(boardState, selectedMove);
 
+        return selectedMove;
+    }
+
+    public static List<Map<String, Object>> generateAllMoves(int[][] boardState, boolean isBlack) {
+        List<Map<String, Object>> moves = new ArrayList<>();
         List<int[]> queens = findQueens(boardState, isBlack);
-        List<int[]> movableQueens = queens.stream()
-                .filter(q -> !getValidMoves(boardState, q[0], q[1]).isEmpty())
-                .toList();
 
-        if (movableQueens.isEmpty()) {
-            System.out.println("Game Over: No more queens left to move.");
-            return null;
+        for (int[] queen : queens) {
+            List<int[]> validMoves = getValidMoves(boardState, queen[0], queen[1]);
+            for (int[] newPos : validMoves) {
+                List<int[]> arrowMoves = getValidMoves(boardState, newPos[0], newPos[1]);
+                for (int[] arrow : arrowMoves) {
+                    Map<String, Object> move = new HashMap<>();
+                    move.put("queen-position-current", new int[]{queen[0], queen[1]});
+                    move.put("queen-position-next", new int[]{newPos[0], newPos[1]});
+                    move.put("arrow-position", new int[]{arrow[0], arrow[1]});
+                    moves.add(move);
+                }
+            }
         }
+        return moves;
+    }
 
-        int[] queen = movableQueens.get(rand.nextInt(movableQueens.size()));
-        List<int[]> validMoves = getValidMoves(boardState, queen[0], queen[1]);
-        int[] move = validMoves.get(rand.nextInt(validMoves.size()));
-        
-        boardState[queen[0]][queen[1]] = 0;
-        boardState[move[0]][move[1]] = isBlack ? 1 : 2;
+    public static void simulateMove(int[][] boardState, Map<String, Object> move) {
+        int[] qcurr = (int[]) move.get("queen-position-current");
+        int[] qnew = (int[]) move.get("queen-position-next");
+        int[] arrow = (int[]) move.get("arrow-position");
 
-        List<int[]> arrowMoves = getValidMoves(boardState, move[0], move[1]);
-        if (arrowMoves.isEmpty()) {
-        	boardState[queen[0]][queen[1]] = isBlack ? 1 : 2;
-            boardState[move[0]][move[1]] = 0;
-            return null;
-        }
-        int[] arrow = arrowMoves.get(rand.nextInt(arrowMoves.size()));
-
-        
+        int queenType = boardState[qcurr[0]][qcurr[1]];
+        boardState[qcurr[0]][qcurr[1]] = 0;
+        boardState[qnew[0]][qnew[1]] = queenType;
         boardState[arrow[0]][arrow[1]] = 3; // Arrow mark
+    }
 
-        ArrayList<Integer> qcurr = new ArrayList<>(Arrays.asList(queen[0], queen[1]));
-        ArrayList<Integer> qnew = new ArrayList<>(Arrays.asList(move[0], move[1]));
-        ArrayList<Integer> arrowPos = new ArrayList<>(Arrays.asList(arrow[0], arrow[1]));
+    public static int evaluateBoard(int[][] boardState, boolean isMaximizing) {
+        int blackMobility = 0, whiteMobility = 0;
+        for (int[] queen : findQueens(boardState, true)) {
+            blackMobility += getValidMoves(boardState, queen[0], queen[1]).size();
+        }
+        for (int[] queen : findQueens(boardState, false)) {
+            whiteMobility += getValidMoves(boardState, queen[0], queen[1]).size();
+        }
+        return isMaximizing ? (blackMobility - whiteMobility) : (whiteMobility - blackMobility);
+    }
 
-        System.out.println("Sending move: Queen from " + qcurr + " to " + qnew + " with arrow at " + arrowPos);
-
-        Map<String, Object> moveMessage = new HashMap<>();
-        moveMessage.put("queen-position-current", qcurr);
-        moveMessage.put("queen-position-next", qnew);
-        moveMessage.put("arrow-position", arrowPos);
-       
-        return moveMessage;
+    public static boolean isGameOver(int[][] boardState) {
+        return generateAllMoves(boardState, true).isEmpty() || generateAllMoves(boardState, false).isEmpty();
     }
 
     private static List<int[]> findQueens(int[][] boardState, boolean isBlack) {
@@ -68,7 +82,7 @@ public class MoveGenerator {
         return queens;
     }
 
-    static List<int[]> getValidMoves(int[][] boardState, int row, int col) {
+    public static List<int[]> getValidMoves(int[][] boardState, int row, int col) {
         List<int[]> moves = new ArrayList<>();
         int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
         for (int[] dir : directions) {
@@ -82,4 +96,3 @@ public class MoveGenerator {
         return moves;
     }
 }
-

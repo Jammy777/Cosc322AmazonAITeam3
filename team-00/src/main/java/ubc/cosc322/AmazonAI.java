@@ -15,17 +15,13 @@ public class AmazonAI extends GamePlayer {
     private BaseGameGUI gameGUI=null;
     private String userName=null;
     private String passwd=null;
-    private GameClient gameClient=null;
-    private BaseGameGUI gameGUI=null;
-    private String userName=null;
-    private String passwd=null;
     private int[][] boardState;
     private final int BOARD_SIZE = 10;
     private boolean isBlack;
 
     public static void main(String[] args) {
         // Create two instances of the AI bot to play against each other
-        Thread player1 = new Thread(() -> {
+        /* Thread player1 = new Thread(() -> {
             AmazonAI player = new AmazonAI("AI_Player_1", "");
             if (player.getGameGUI() == null) {
                 player.Go();
@@ -49,7 +45,7 @@ public class AmazonAI extends GamePlayer {
         
 
         player1.start();
-        player2.start();
+        player2.start(); */
     }
     public AmazonAI(String userName, String passwd) {
         this.userName = userName;
@@ -120,23 +116,15 @@ public class AmazonAI extends GamePlayer {
         return true;
     }
 
-    private void printBoard() {
-        System.out.println("Current Board State:");
-        for (int i = 0; i < BOARD_SIZE; i++) {
-            for (int j = 0; j < BOARD_SIZE; j++) {
-                System.out.print(boardState[i][j] + " ");
-            }
-            System.out.println("\n");
-            System.out.println("\n");
-        }
-    }
-
     private Map<String, Object> makeMove() {
-        System.out.println("AI is making a move...");
+        System.out.println("From AmazonAI: AI is making a move...");
+        System.out.println("From AmazonAI: Checking initial board state: "); 
+        printBoard(); 
         
-        Map<String, Object> move = MoveGenerator.generateMove(boardState, isBlack);
+        Map<String, Object> move = MinMax.findBestMove(boardState, isBlack);
+        System.out.println("From AmazonAI: Chosen Move: " + move);
         if (move == null) {
-            System.out.println("No valid move found, game over, called from makeMove in AI.");
+            System.out.println("From AmazonAI: No valid move found, game over, called from makeMove in AI.");
             
             return null;
         }
@@ -170,6 +158,17 @@ public class AmazonAI extends GamePlayer {
             boardState[arrow.get(0)][arrow.get(1)] = 3;
         }
         
+    }
+
+    private void printBoard() {
+        System.out.println("Current Board State:");
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            for (int j = 0; j < BOARD_SIZE; j++) {
+                System.out.print(boardState[i][j] + " ");
+            }
+            System.out.println("\n");
+            System.out.println("\n");
+        }
     }
 
     @Override

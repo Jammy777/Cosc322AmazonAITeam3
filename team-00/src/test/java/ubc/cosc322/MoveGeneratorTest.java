@@ -1,16 +1,14 @@
 package ubc.cosc322;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class MoveGeneratorTest {
-    
+
     private static final int BOARD_SIZE = 10;
 
     private int[][] board;
@@ -34,7 +32,7 @@ public class MoveGeneratorTest {
         board[4][4] = 1; // Queen's position
         board[4][6] = 1; // Block in the right direction
         board[6][4] = 1; // Block downward
-        
+
         List<int[]> moves = MoveGenerator.getValidMoves(board, 4, 4);
 
         // Should exclude positions beyond (4,6) and (6,4)
@@ -46,7 +44,7 @@ public class MoveGeneratorTest {
     public void testValidMoves_QueenAtCorner() {
         board[0][0] = 1; // Queen at top-left corner
         List<int[]> moves = MoveGenerator.getValidMoves(board, 0, 0);
-
+    
         // Queen should have only 3 possible move directions
         assertEquals(27, moves.size());
     }
@@ -54,9 +52,9 @@ public class MoveGeneratorTest {
     @Test
     public void testValidMoves_BlockedByArrows() {
         board[5][5] = 1; // Queen's position
-        board[6][6] = -1; // Arrow blocks diagonal
-        board[5][6] = -1; // Arrow blocks right move
-        
+        board[6][6] = 3; // Arrow blocks diagonal
+        board[5][6] = 3; // Arrow blocks right move
+
         List<int[]> moves = MoveGenerator.getValidMoves(board, 5, 5);
 
         assertFalse(containsMove(moves, 6, 6));

@@ -2,7 +2,6 @@ package ubc.cosc322;
 
 import ygraph.ai.smartfox.games.BaseGameGUI;
 
-import ygraph.ai.smartfox.games.BaseGameGUI;
 
 public class AmazonAITest {
     public static void main(String[] args) {
