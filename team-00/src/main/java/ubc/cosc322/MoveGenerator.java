@@ -1,9 +1,11 @@
 package ubc.cosc322;
 
-import java.util.*;
-
-import java.awt.Point;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 public class MoveGenerator {
     private static final int BOARD_SIZE = 10;

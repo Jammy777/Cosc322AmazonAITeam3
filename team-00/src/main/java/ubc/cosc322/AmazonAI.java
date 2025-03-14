@@ -15,6 +15,10 @@ public class AmazonAI extends GamePlayer {
     private BaseGameGUI gameGUI=null;
     private String userName=null;
     private String passwd=null;
+    private GameClient gameClient=null;
+    private BaseGameGUI gameGUI=null;
+    private String userName=null;
+    private String passwd=null;
     private int[][] boardState;
     private final int BOARD_SIZE = 10;
     private boolean isBlack;
@@ -61,7 +65,10 @@ public class AmazonAI extends GamePlayer {
         if (gameGUI != null) {
             gameGUI.setRoomInformation(gameClient.getRoomList());
         }
+
         gameClient.joinRoom("Oyama Lake");
+        System.out.println(userName + " joined the room.");
+
     }
 
     @Override
@@ -119,6 +126,7 @@ public class AmazonAI extends GamePlayer {
             for (int j = 0; j < BOARD_SIZE; j++) {
                 System.out.print(boardState[i][j] + " ");
             }
+            System.out.println("\n");
             System.out.println("\n");
         }
     }
