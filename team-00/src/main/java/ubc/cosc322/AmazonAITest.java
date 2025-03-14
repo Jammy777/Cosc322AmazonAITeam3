@@ -13,7 +13,6 @@ public class AmazonAITest {
                 BaseGameGUI.sys_setup();
                 java.awt.EventQueue.invokeLater(player::Go);
             }
-            
         });
 /// can make this one player by removing thread two - make it a comment
         
@@ -27,7 +26,6 @@ public class AmazonAITest {
             }
        });
         
-
         player1.start();
         player2.start();
     }
