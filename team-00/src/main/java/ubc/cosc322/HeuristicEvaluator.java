@@ -108,7 +108,7 @@ class Board {
         List<Cell> moves = new ArrayList<>();
         Cell pos = amazon.getPosition();
         int x = pos.row, y = pos.col;
-        System.out.println("Checking legal moves for Amazon at: " + pos);
+      // System.out.println("Checking legal moves for Amazon at: " + pos);
     
         for (int d = 0; d < 8; d++) {
             int nx = x + dx[d], ny = y + dy[d];
@@ -119,7 +119,7 @@ class Board {
             }
         }
     
-        System.out.println("Legal moves found: " + moves);
+       // System.out.println("Legal moves found: " + moves);
         return moves;
     }
     
@@ -128,13 +128,13 @@ class Board {
         Queue<Cell> queue = new LinkedList<>();
     
         if (!isWithinBounds(start.row, start.col)) {
-            System.out.println("Flood-fill start position (" + start + ") is out of bounds.");
+          //  System.out.println("Flood-fill start position (" + start + ") is out of bounds.");
             return visited;
         }
     
         // Start position must be empty or occupied by the player
         if (grid[start.row][start.col] != 0 && grid[start.row][start.col] != player) {
-            System.out.println("Flood-fill start position (" + start + ") is blocked or belongs to the opponent.");
+          //  System.out.println("Flood-fill start position (" + start + ") is blocked or belongs to the opponent.");
             return visited;
         }
     
@@ -164,7 +164,7 @@ class Board {
             }
         }
     
-        System.out.println("Flood-fill completed for Player " + player + ". Total reachable cells: " + visited.size());
+       // System.out.println("Flood-fill completed for Player " + player + ". Total reachable cells: " + visited.size());
         return visited;
     }
     
@@ -181,7 +181,7 @@ class Board {
             for (int j = 0; j < cols; j++){
                 System.out.print(grid[i][j] + "\t");
             }
-            System.out.println();
+           System.out.println();
         }
     }
 }
@@ -208,12 +208,12 @@ class HeuristicEvaluator {
                          (weightDistance * queenDistanceScore);
     
         // Debugging Output
-        System.out.println("Player " + player + " Scores:");
-        System.out.println("  Mobility Score: " + mobilityScore);
-        System.out.println("  Territory Score: " + territoryScore);
-        System.out.println("  Connectivity Score: " + connectivityScore);
-        System.out.println("  Queen Distance Score: " + queenDistanceScore);
-        System.out.println("  Final Heuristic Score: " + finalScore);
+      //  System.out.println("Player " + player + " Scores:");
+      // System.out.println("  Mobility Score: " + mobilityScore);
+      //  System.out.println("  Territory Score: " + territoryScore);
+      //  System.out.println("  Connectivity Score: " + connectivityScore);
+      //  System.out.println("  Queen Distance Score: " + queenDistanceScore);
+      //  System.out.println("  Final Heuristic Score: " + finalScore);
         
         return finalScore;
     }
@@ -222,7 +222,7 @@ class HeuristicEvaluator {
         int total = 0;
         for (Amazon amazon : board.getAmazons(player)) {
             List<Cell> moves = board.getLegalMoves(amazon);
-            System.out.println("Player " + player + " Amazon at " + amazon.getPosition() + " has " + moves.size() + " moves.");
+          //  System.out.println("Player " + player + " Amazon at " + amazon.getPosition() + " has " + moves.size() + " moves.");
             total += moves.size();
         }
         return total;
@@ -233,11 +233,11 @@ class HeuristicEvaluator {
     
         for (Amazon amazon : board.getAmazons(player)) {
             Set<Cell> filledCells = board.floodFill(amazon.getPosition(), player);
-            System.out.println("Player " + player + " flood-fill from " + amazon.getPosition() + " covers: " + filledCells.size());
+          //  System.out.println("Player " + player + " flood-fill from " + amazon.getPosition() + " covers: " + filledCells.size());
             reachable.addAll(filledCells);
         }
     
-        System.out.println("Total territory for Player " + player + ": " + reachable.size());
+        // System.out.println("Total territory for Player " + player + ": " + reachable.size());
         return reachable.size();
     }
     

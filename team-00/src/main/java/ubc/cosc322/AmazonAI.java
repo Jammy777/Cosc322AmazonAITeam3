@@ -11,6 +11,7 @@ import ygraph.ai.smartfox.games.GameMessage;
 import ygraph.ai.smartfox.games.GamePlayer;
 
 public class AmazonAI extends GamePlayer {
+
     private GameClient gameClient = null;
     private BaseGameGUI gameGUI = null;
     private String userName = null;
@@ -83,22 +84,30 @@ public class AmazonAI extends GamePlayer {
         } else if (GameMessage.GAME_ACTION_START.equals(messageType)) {
             isBlack = msgDetails.get("player-black").equals(userName);
             if (!isBlack) {
-                makeMove();
+                Map<String, Object> move = makeMove();
+
+                if (move != null) {
+                    gameGUI.updateGameState(shiftPosUpByOne(move));
+                }
             }
+    
 
         } else if (GameMessage.GAME_ACTION_MOVE.equals(messageType)) {
             System.out.println("Server acknowledged the move: " + msgDetails);
             updateBoardState(msgDetails, true);
             gameGUI.updateGameState(msgDetails);
 
-            System.out.println("Move from server: " +
-                    (ArrayList<Integer>) msgDetails.get("queen-position-current") + "\n" +
-                    (ArrayList<Integer>) msgDetails.get("queen-position-next") + "\n" +
-                    (ArrayList<Integer>) msgDetails.get("arrow-position"));
+            System.out.println("Move from server: "
+                    + (ArrayList<Integer>) msgDetails.get("queen-position-current") + "\n"
+                    + (ArrayList<Integer>) msgDetails.get("queen-position-next") + "\n"
+                    + (ArrayList<Integer>) msgDetails.get("arrow-position"));
 
             Map<String, Object> move = makeMove();
 
-            if (move != null) gameGUI.updateGameState(shiftPosUpByOne(move));
+            if (move != null) {
+                gameGUI.updateGameState(shiftPosUpByOne(move));
+            }
+            isBlack = !isBlack;
         }
         return true;
     }
@@ -157,14 +166,14 @@ public class AmazonAI extends GamePlayer {
         }
     }
 
-    private Map<String, Object> shiftPosUpByOne(Map<String, Object> move){
-        ArrayList<Integer> adjustedQueenCurPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-current"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-current"))).get(1)+1));
-        ArrayList<Integer> adjustedQueenNewPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-next"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-next"))).get(1)+1));
-        ArrayList<Integer> adjustedArrowNewPos= new ArrayList<> (Arrays.asList(((ArrayList<Integer>) (move.get("arrow-position"))).get(0)+1, ((ArrayList<Integer>) (move.get("arrow-position"))).get(1)+1));
-        Map<String, Object> adjustedMap = new HashMap<String, Object>();      
-        adjustedMap.put("queen-position-current",adjustedQueenCurPos);
-        adjustedMap.put("queen-position-next",adjustedQueenNewPos);
-        adjustedMap.put("arrow-position",adjustedArrowNewPos);
+    private Map<String, Object> shiftPosUpByOne(Map<String, Object> move) {
+        ArrayList<Integer> adjustedQueenCurPos = new ArrayList<>(Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-current"))).get(0) + 1, ((ArrayList<Integer>) (move.get("queen-position-current"))).get(1) + 1));
+        ArrayList<Integer> adjustedQueenNewPos = new ArrayList<>(Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-next"))).get(0) + 1, ((ArrayList<Integer>) (move.get("queen-position-next"))).get(1) + 1));
+        ArrayList<Integer> adjustedArrowNewPos = new ArrayList<>(Arrays.asList(((ArrayList<Integer>) (move.get("arrow-position"))).get(0) + 1, ((ArrayList<Integer>) (move.get("arrow-position"))).get(1) + 1));
+        Map<String, Object> adjustedMap = new HashMap<String, Object>();
+        adjustedMap.put("queen-position-current", adjustedQueenCurPos);
+        adjustedMap.put("queen-position-next", adjustedQueenNewPos);
+        adjustedMap.put("arrow-position", adjustedArrowNewPos);
         return adjustedMap;
     }
 

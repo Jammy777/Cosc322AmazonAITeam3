@@ -5,10 +5,9 @@ import java.util.Map;
 import java.util.Random;
 
 public class MinMax {
-    private static final int MAX_DEPTH = 0;
+    private static final int MAX_DEPTH = 0; 
     private static final int INF = Integer.MAX_VALUE;
-    private static final HeuristicEvaluator evaluator = new HeuristicEvaluator(); 
-
+    private static final HeuristicEvaluator evaluator = new HeuristicEvaluator();
 
     public static Map<String, Object> findBestMove(int[][] board, boolean isBlack) {
         System.out.println("From MinMax: Finding best move for " + (isBlack ? "Black" : "White"));
@@ -26,11 +25,8 @@ public class MinMax {
         Map<String, Object> bestMove = null;
 
         for (Map<String, Object> move : possibleMoves) {
-            
-            int[][] newBoard = MoveGenerator.simulateMove(board, move); // Updated to return a new board
-            int score = minimax(newBoard, MAX_DEPTH, -INF, INF, !isBlack);
-
-           // System.out.println("From MinMax: Move " + move + " has score " + score);
+            int[][] newBoard = MoveGenerator.simulateMove(board, move);
+            int score = minimax(newBoard, MAX_DEPTH, -INF, INF, isBlack); 
 
             if ((isBlack && score > bestScore) || (!isBlack && score < bestScore)) {
                 bestScore = score;
@@ -47,34 +43,38 @@ public class MinMax {
         return bestMove;
     }
 
-    private static int minimax(int[][] board, int depth, int alpha, int beta, boolean isMaximizing) {
+    private static int minimax(int[][] board, int depth, int alpha, int beta, boolean isBlackTurn) {
         if (depth == 0 || MoveGenerator.isGameOver(board)) {
-            return MoveGenerator.evaluateBoard(board, isMaximizing);
+            return evaluateBoard(board, isBlackTurn); 
         }
 
-        //System.err.println("From MinMax: Calling generateAllMoves from minmax function:");
-        List<Map<String, Object>> moves = MoveGenerator.generateAllMoves(board, isMaximizing);
-
-        if (isMaximizing) {
+        List<Map<String, Object>> moves = MoveGenerator.generateAllMoves(board, isBlackTurn);
+        if (isBlackTurn) {  
             int maxEval = -INF;
             for (Map<String, Object> move : moves) {
-                int[][] newBoard = MoveGenerator.simulateMove(board, move); // Updated to return a new board
-                int eval = minimax(newBoard, depth - 1, alpha, beta, false);
+                int[][] newBoard = MoveGenerator.simulateMove(board, move);
+                int eval = minimax(newBoard, depth - 1, alpha, beta, false); 
                 maxEval = Math.max(maxEval, eval);
                 alpha = Math.max(alpha, eval);
-                if (beta <= alpha) break; // Alpha-Beta Pruning
+                if (beta <= alpha) break; 
             }
             return maxEval;
-        } else {
+        } else {  
             int minEval = INF;
             for (Map<String, Object> move : moves) {
-                int[][] newBoard = MoveGenerator.simulateMove(board, move); // Updated to return a new board
-                int eval = minimax(newBoard, depth - 1, alpha, beta, true);
+                int[][] newBoard = MoveGenerator.simulateMove(board, move);
+                int eval = minimax(newBoard, depth - 1, alpha, beta, true); 
                 minEval = Math.min(minEval, eval);
                 beta = Math.min(beta, eval);
-                if (beta <= alpha) break; // Alpha-Beta Pruning
+                if (beta <= alpha) break; 
             }
             return minEval;
         }
+    }
+
+    private static int evaluateBoard(int[][] boardState, boolean isBlackTurn) {
+        Board board = new Board(boardState); 
+        int player = isBlackTurn ? 2 : 1; 
+        return evaluator.evaluate(board, player);
     }
 }
