@@ -162,27 +162,36 @@ public class AmazonAI extends GamePlayer {
     }
     
     private ArrayList<Integer> convertToArrayList(int[] arr) {
-        return new ArrayList<>(Arrays.asList(arr[0] + 1, arr[1] + 1)); // Convert 0-based to 1-based
-    }
-    
-    
+        if (arr[0] < 0 || arr[0] >= 10 || arr[1] < 0 || arr[1] >= 10) {
+            System.err.println("ERROR: Invalid coordinate conversion! " + Arrays.toString(arr));
+        }
+        return new ArrayList<>(Arrays.asList(arr[0] + 1, arr[1] + 1));
+    }    
 
     private void updateBoardState(Map<String, Object> move, boolean incomingMove) {
         ArrayList<Integer> qcurr = (ArrayList<Integer>) move.get("queen-position-current");
         ArrayList<Integer> qnew = (ArrayList<Integer>) move.get("queen-position-next");
         ArrayList<Integer> arrow = (ArrayList<Integer>) move.get("arrow-position");
     
-        if (incomingMove) {
-            boardState[qcurr.get(0) - 1][qcurr.get(1) - 1] = 0;
-            boardState[qnew.get(0) - 1][qnew.get(1) - 1] = isBlack ? 2 : 1;
-            boardState[arrow.get(0) - 1][arrow.get(1) - 1] = 3;
-        } else {
-            boardState[qcurr.get(0)][qcurr.get(1)] = 0;
-            boardState[qnew.get(0)][qnew.get(1)] = isBlack ? 1 : 2;
-            boardState[arrow.get(0)][arrow.get(1)] = 3;
-        }
-    }
+        int qcurrX = qcurr.get(0) - 1;
+        int qcurrY = qcurr.get(1) - 1;
+        int qnewX = qnew.get(0) - 1;
+        int qnewY = qnew.get(1) - 1;
+        int arrowX = arrow.get(0) - 1;
+        int arrowY = arrow.get(1) - 1;
     
+        // Ensure all indices are within the valid 0-9 range
+        if (qcurrX < 0 || qcurrX >= 10 || qcurrY < 0 || qcurrY >= 10 ||
+            qnewX < 0 || qnewX >= 10 || qnewY < 0 || qnewY >= 10 ||
+            arrowX < 0 || arrowX >= 10 || arrowY < 0 || arrowY >= 10) {
+            System.err.println("ERROR: Move contains invalid indices! " + move);
+            return; // Skip the update to avoid crashing
+        }
+    
+        boardState[qcurrX][qcurrY] = 0;
+        boardState[qnewX][qnewY] = isBlack ? 1 : 2;
+        boardState[arrowX][arrowY] = 3;
+    }
 
     private void printBoard() {
         System.out.println("Current Board State:");
