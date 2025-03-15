@@ -81,9 +81,9 @@ public class AmazonAI extends GamePlayer {
                 boardState = new int[BOARD_SIZE][BOARD_SIZE];
                 for (int i = 0; i < BOARD_SIZE; i++) {
                     for (int j = 0; j < BOARD_SIZE; j++) {
-                        boardState[i][j] = gameState.get((10 - i) * 11 + j + 1);
+                        boardState[i][j] = gameState.get((10 - i) * 11 + j + 1); 
                     }
-                }
+                }                
                 printBoard();
                 if (gameGUI != null) {
                     gameGUI.setGameState(gameState);
@@ -153,26 +153,25 @@ public class AmazonAI extends GamePlayer {
      */
     private Map<String, Object> convertMove(Map<String, Object> move) {
         Map<String, Object> convertedMove = new HashMap<>();
-
+    
         convertedMove.put("queen-position-current", convertToArrayList((int[]) move.get("queen-position-current")));
         convertedMove.put("queen-position-next", convertToArrayList((int[]) move.get("queen-position-next")));
         convertedMove.put("arrow-position", convertToArrayList((int[]) move.get("arrow-position")));
-
+    
         return convertedMove;
     }
-
-    /**
-     * Converts an int[] to an ArrayList<Integer> and shifts coordinates to
-     * 1-based indexing.
-     */
+    
     private ArrayList<Integer> convertToArrayList(int[] arr) {
-        return new ArrayList<>(Arrays.asList(arr[0] + 1, arr[1] + 1));
+        return new ArrayList<>(Arrays.asList(arr[0] + 1, arr[1] + 1)); // Convert 0-based to 1-based
     }
+    
+    
 
     private void updateBoardState(Map<String, Object> move, boolean incomingMove) {
         ArrayList<Integer> qcurr = (ArrayList<Integer>) move.get("queen-position-current");
         ArrayList<Integer> qnew = (ArrayList<Integer>) move.get("queen-position-next");
         ArrayList<Integer> arrow = (ArrayList<Integer>) move.get("arrow-position");
+    
         if (incomingMove) {
             boardState[qcurr.get(0) - 1][qcurr.get(1) - 1] = 0;
             boardState[qnew.get(0) - 1][qnew.get(1) - 1] = isBlack ? 2 : 1;
@@ -182,8 +181,8 @@ public class AmazonAI extends GamePlayer {
             boardState[qnew.get(0)][qnew.get(1)] = isBlack ? 1 : 2;
             boardState[arrow.get(0)][arrow.get(1)] = 3;
         }
-
     }
+    
 
     private void printBoard() {
         System.out.println("Current Board State:");

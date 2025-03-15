@@ -49,13 +49,14 @@ public class MoveGenerator {
         int[] qcurr = (int[]) move.get("queen-position-current");
         int[] qnew = (int[]) move.get("queen-position-next");
         int[] arrow = (int[]) move.get("arrow-position");
-
+    
         int queenType = newBoard[qcurr[0]][qcurr[1]];
         newBoard[qcurr[0]][qcurr[1]] = 0;
         newBoard[qnew[0]][qnew[1]] = queenType;
         newBoard[arrow[0]][arrow[1]] = 3; // Arrow mark
-        return newBoard;
+        return newBoard; // Fix: Return new board instead of modifying existing one
     }
+    
 
     private static List<int[]> findQueens(int[][] boardState, boolean isBlack) {
         List<int[]> queens = new ArrayList<>();
@@ -73,25 +74,25 @@ public class MoveGenerator {
     public static List<int[]> getValidMoves(int[][] boardState, int row, int col) {
         List<int[]> moves = new ArrayList<>();
         int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
-
+    
         for (int[] dir : directions) {
             int r = row + dir[0], c = col + dir[1];
-
+    
             while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
                 if (boardState[r][c] != 0) {
                     break;
                 }
                 if (r >= BOARD_SIZE || c >= BOARD_SIZE || r < 0 || c < 0) { 
-                    break; // Extra safety check to avoid out-of-bounds moves
+                    break; // Fix: Ensure out-of-bounds is checked **before adding**
                 }
                 moves.add(new int[]{r, c});
                 r += dir[0];
                 c += dir[1];
             }
-            
         }
         return moves;
     }
+    
 
     public static int evaluateBoard(int[][] boardState, boolean isMaximizing) {
         int blackMobility = 0, whiteMobility = 0;
