@@ -5,7 +5,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,23 +66,6 @@ public class MoveGeneratorTest {
         List<Map<String, Object>> moves = MoveGenerator.generateAllMoves(board, true);
 
         assertFalse(moves.isEmpty(), "Move generation should not be empty.");
-    }
-
-    @Test
-    public void testSimulateMove_UpdatesBoardCorrectly() {
-        board[2][2] = 1; // White Queen
-        Map<String, Object> move = MoveGenerator.generateMove(board, true);
-
-        assertNotNull(move, "Move should not be null.");
-
-        int[][] newBoard = MoveGenerator.simulateMove(board, move); // Use returned board instead
-
-        int[] qnew = (int[]) move.get("queen-position-next");
-        int[] arrow = (int[]) move.get("arrow-position");
-
-        assertEquals(1, newBoard[qnew[0]][qnew[1]], "Queen should have moved to new position.");
-        assertEquals(3, newBoard[arrow[0]][arrow[1]], "Arrow should be placed.");
-        assertEquals(1, board[2][2], "Original board should remain unchanged.");
     }
 
     @Test

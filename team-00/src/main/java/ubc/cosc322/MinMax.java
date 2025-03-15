@@ -7,6 +7,8 @@ import java.util.Random;
 public class MinMax {
     private static final int MAX_DEPTH = 0;
     private static final int INF = Integer.MAX_VALUE;
+    private static final HeuristicEvaluator evaluator = new HeuristicEvaluator(); 
+
 
     public static Map<String, Object> findBestMove(int[][] board, boolean isBlack) {
         System.out.println("From MinMax: Finding best move for " + (isBlack ? "Black" : "White"));
