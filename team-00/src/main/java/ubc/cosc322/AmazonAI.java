@@ -11,10 +11,11 @@ import ygraph.ai.smartfox.games.GameMessage;
 import ygraph.ai.smartfox.games.GamePlayer;
 
 public class AmazonAI extends GamePlayer {
-    private GameClient gameClient=null;
-    private BaseGameGUI gameGUI=null;
-    private String userName=null;
-    private String passwd=null;
+
+    private GameClient gameClient = null;
+    private BaseGameGUI gameGUI = null;
+    private String userName = null;
+    private String passwd = null;
     private int[][] boardState;
     private final int BOARD_SIZE = 10;
     private boolean isBlack;
@@ -47,17 +48,17 @@ public class AmazonAI extends GamePlayer {
         player1.start();
         player2.start(); */
     }
+
     public AmazonAI(String userName, String passwd) {
         this.userName = userName;
         this.passwd = passwd;
         this.gameGUI = new BaseGameGUI(this);
-        this.gameClient = new GameClient(userName, passwd, (GamePlayer)this);
+        this.gameClient = new GameClient(userName, passwd, (GamePlayer) this);
     }
-
 
     @Override
     public void onLogin() {
-        
+
         if (gameGUI != null) {
             gameGUI.setRoomInformation(gameClient.getRoomList());
         }
@@ -73,75 +74,99 @@ public class AmazonAI extends GamePlayer {
         System.out.println("Message Details: " + msgDetails);
 
         if (GameMessage.GAME_STATE_BOARD.equals(messageType)) {
-            
-                ArrayList<Integer> gameState = (ArrayList<Integer>) msgDetails.get("game-state");
 
-                if (gameState != null) {
-                    boardState = new int[BOARD_SIZE][BOARD_SIZE];
-                    for (int i = 0; i < BOARD_SIZE; i++) {
-                        for (int j = 0; j < BOARD_SIZE; j++) {
-                            boardState[i][j] = gameState.get((10-i)*11+j+1);
-                        }
+            ArrayList<Integer> gameState = (ArrayList<Integer>) msgDetails.get("game-state");
+
+            if (gameState != null) {
+                boardState = new int[BOARD_SIZE][BOARD_SIZE];
+                for (int i = 0; i < BOARD_SIZE; i++) {
+                    for (int j = 0; j < BOARD_SIZE; j++) {
+                        boardState[i][j] = gameState.get((10 - i) * 11 + j + 1);
                     }
-                    printBoard();
-                    if (gameGUI != null) {
-                        gameGUI.setGameState(gameState);
-                    }
-                    
                 }
-            
+                printBoard();
+                if (gameGUI != null) {
+                    gameGUI.setGameState(gameState);
+                }
+
+            }
+
         } else if (GameMessage.GAME_ACTION_START.equals(messageType)) {
             isBlack = msgDetails.get("player-black").equals(userName);
             if (!isBlack) {
-            	 
-            	makeMove();
-            	
+
+                makeMove();
+
             }
         } else if (GameMessage.GAME_ACTION_MOVE.equals(messageType)) {
             System.out.println("Server acknowledged the move: " + msgDetails);
-            	updateBoardState(msgDetails, true);
-                gameGUI.updateGameState(msgDetails);
-                
-                System.out.println("Move from server: "+(ArrayList<Integer>) msgDetails.get("queen-position-current")+"\n"+
-                (ArrayList<Integer>) msgDetails.get("queen-position-next")+"\n"+
-                (ArrayList<Integer>) msgDetails.get("arrow-position"));
-            
-            
-            
-                Map<String, Object> move=makeMove();
-                
-                if (move!=null) gameGUI.updateGameState(shiftPosUpByOne(move));
-            
+            updateBoardState(msgDetails, true);
+            gameGUI.updateGameState(msgDetails);
+
+            System.out.println("Move from server: " + (ArrayList<Integer>) msgDetails.get("queen-position-current") + "\n"
+                    + (ArrayList<Integer>) msgDetails.get("queen-position-next") + "\n"
+                    + (ArrayList<Integer>) msgDetails.get("arrow-position"));
+
+            Map<String, Object> move = makeMove();
+
+            if (move != null) {
+                gameGUI.updateGameState(shiftPosUpByOne(move));
+            }
+
         }
         return true;
     }
 
     private Map<String, Object> makeMove() {
         System.out.println("From AmazonAI: AI is making a move...");
-        System.out.println("From AmazonAI: Checking initial board state: "); 
-        printBoard(); 
-        
+        System.out.println("From AmazonAI: Checking initial board state: ");
+
         Map<String, Object> move = MinMax.findBestMove(boardState, isBlack);
         System.out.println("From AmazonAI: Chosen Move: " + move);
+
         if (move == null) {
-            System.out.println("From AmazonAI: No valid move found, game over, called from makeMove in AI.");
-            
+            System.out.println("From AmazonAI: No valid move found, game over.");
             return null;
         }
-        
-        ArrayList<Integer> adjustedQueenCurPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-current"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-current"))).get(1)+1));
-        ArrayList<Integer> adjustedQueenNewPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-next"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-next"))).get(1)+1));
-        ArrayList<Integer> adjustedArrowNewPos= new ArrayList<> (Arrays.asList(((ArrayList<Integer>) (move.get("arrow-position"))).get(0)+1, ((ArrayList<Integer>) (move.get("arrow-position"))).get(1)+1));
-        
-        gameClient.sendMoveMessage(
-        		adjustedQueenCurPos,
-        		adjustedQueenNewPos,
-        		adjustedArrowNewPos
-        );
+
+        // Convert move data from int[] to ArrayList<Integer>
+        move = convertMove(move);
+
+        if (gameClient != null) { // Null check for safety
+            gameClient.sendMoveMessage(
+                    (ArrayList<Integer>) move.get("queen-position-current"),
+                    (ArrayList<Integer>) move.get("queen-position-next"),
+                    (ArrayList<Integer>) move.get("arrow-position")
+            );
+        } else {
+            System.out.println("From AmazonAI: ERROR - gameClient is null, cannot send move.");
+        }
 
         updateBoardState(move, false);
         printBoard();
         return move;
+    }
+
+    /**
+     * Converts int[] arrays in the move map to ArrayList<Integer> (for
+     * SmartFoxServer compatibility).
+     */
+    private Map<String, Object> convertMove(Map<String, Object> move) {
+        Map<String, Object> convertedMove = new HashMap<>();
+
+        convertedMove.put("queen-position-current", convertToArrayList((int[]) move.get("queen-position-current")));
+        convertedMove.put("queen-position-next", convertToArrayList((int[]) move.get("queen-position-next")));
+        convertedMove.put("arrow-position", convertToArrayList((int[]) move.get("arrow-position")));
+
+        return convertedMove;
+    }
+
+    /**
+     * Converts an int[] to an ArrayList<Integer> and shifts coordinates to
+     * 1-based indexing.
+     */
+    private ArrayList<Integer> convertToArrayList(int[] arr) {
+        return new ArrayList<>(Arrays.asList(arr[0] + 1, arr[1] + 1));
     }
 
     private void updateBoardState(Map<String, Object> move, boolean incomingMove) {
@@ -149,15 +174,15 @@ public class AmazonAI extends GamePlayer {
         ArrayList<Integer> qnew = (ArrayList<Integer>) move.get("queen-position-next");
         ArrayList<Integer> arrow = (ArrayList<Integer>) move.get("arrow-position");
         if (incomingMove) {
-        	boardState[qcurr.get(0)-1][qcurr.get(1)-1] = 0;
-            boardState[qnew.get(0)-1][qnew.get(1)-1] = isBlack ? 2 : 1;
-            boardState[arrow.get(0)-1][arrow.get(1)-1] = 3;
-        }else {
-        	boardState[qcurr.get(0)][qcurr.get(1)] = 0;
+            boardState[qcurr.get(0) - 1][qcurr.get(1) - 1] = 0;
+            boardState[qnew.get(0) - 1][qnew.get(1) - 1] = isBlack ? 2 : 1;
+            boardState[arrow.get(0) - 1][arrow.get(1) - 1] = 3;
+        } else {
+            boardState[qcurr.get(0)][qcurr.get(1)] = 0;
             boardState[qnew.get(0)][qnew.get(1)] = isBlack ? 1 : 2;
             boardState[arrow.get(0)][arrow.get(1)] = 3;
         }
-        
+
     }
 
     private void printBoard() {
@@ -190,15 +215,15 @@ public class AmazonAI extends GamePlayer {
     public void connect() {
         gameClient = new GameClient(userName, passwd, this);
     }
-    private Map<String, Object> shiftPosUpByOne(Map<String, Object> move){
-    	 ArrayList<Integer> adjustedQueenCurPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-current"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-current"))).get(1)+1));
-         ArrayList<Integer> adjustedQueenNewPos= new ArrayList<>( Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-next"))).get(0)+1, ((ArrayList<Integer>) (move.get("queen-position-next"))).get(1)+1));
-         ArrayList<Integer> adjustedArrowNewPos= new ArrayList<> (Arrays.asList(((ArrayList<Integer>) (move.get("arrow-position"))).get(0)+1, ((ArrayList<Integer>) (move.get("arrow-position"))).get(1)+1));
-         Map<String, Object> adjustedMap = new HashMap<String, Object>();      
-         adjustedMap.put("queen-position-current",adjustedQueenCurPos);
-         adjustedMap.put("queen-position-next",adjustedQueenNewPos);
-         adjustedMap.put("arrow-position",adjustedArrowNewPos);
-         return adjustedMap;
-         }
-    }
 
+    private Map<String, Object> shiftPosUpByOne(Map<String, Object> move) {
+        ArrayList<Integer> adjustedQueenCurPos = new ArrayList<>(Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-current"))).get(0) + 1, ((ArrayList<Integer>) (move.get("queen-position-current"))).get(1) + 1));
+        ArrayList<Integer> adjustedQueenNewPos = new ArrayList<>(Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-next"))).get(0) + 1, ((ArrayList<Integer>) (move.get("queen-position-next"))).get(1) + 1));
+        ArrayList<Integer> adjustedArrowNewPos = new ArrayList<>(Arrays.asList(((ArrayList<Integer>) (move.get("arrow-position"))).get(0) + 1, ((ArrayList<Integer>) (move.get("arrow-position"))).get(1) + 1));
+        Map<String, Object> adjustedMap = new HashMap<String, Object>();
+        adjustedMap.put("queen-position-current", adjustedQueenCurPos);
+        adjustedMap.put("queen-position-next", adjustedQueenNewPos);
+        adjustedMap.put("arrow-position", adjustedArrowNewPos);
+        return adjustedMap;
+    }
+}

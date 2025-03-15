@@ -1,16 +1,17 @@
 package ubc.cosc322;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class MoveGeneratorTest {
 
     private static final int BOARD_SIZE = 10;
-
     private int[][] board;
 
     @BeforeEach
@@ -20,11 +21,10 @@ public class MoveGeneratorTest {
 
     @Test
     public void testValidMoves_EmptyBoard() {
-        int row = 4, col = 4;
-        List<int[]> moves = MoveGenerator.getValidMoves(board, row, col);
+        board[4][4] = 1; // Place queen in the center
+        List<int[]> moves = MoveGenerator.getValidMoves(board, 4, 4);
 
-        // Should have 27 moves in all 8 directions until the edge of the board
-        assertEquals(35, moves.size());
+        assertEquals(35, moves.size(), "Queen in center should have exactly 35 moves.");
     }
 
     @Test
@@ -35,18 +35,16 @@ public class MoveGeneratorTest {
 
         List<int[]> moves = MoveGenerator.getValidMoves(board, 4, 4);
 
-        // Should exclude positions beyond (4,6) and (6,4)
-        assertFalse(containsMove(moves, 4, 7));
-        assertFalse(containsMove(moves, 7, 4));
+        assertFalse(containsMove(moves, 4, 7)); // Blocked beyond (4,6)
+        assertFalse(containsMove(moves, 7, 4)); // Blocked beyond (6,4)
     }
 
     @Test
     public void testValidMoves_QueenAtCorner() {
-        board[0][0] = 1; // Queen at top-left corner
+        board[0][0] = 1; // Queen in the top-left corner
         List<int[]> moves = MoveGenerator.getValidMoves(board, 0, 0);
-    
-        // Queen should have only 3 possible move directions
-        assertEquals(27, moves.size());
+
+        assertEquals(27, moves.size(), "Queen at (0,0) should have exactly 27 moves.");
     }
 
     @Test
@@ -57,11 +55,47 @@ public class MoveGeneratorTest {
 
         List<int[]> moves = MoveGenerator.getValidMoves(board, 5, 5);
 
-        assertFalse(containsMove(moves, 6, 6));
-        assertFalse(containsMove(moves, 5, 6));
+        assertFalse(containsMove(moves, 6, 6)); // Blocked by arrow
+        assertFalse(containsMove(moves, 5, 6)); // Blocked by arrow
     }
 
-    // Helper method to check if a move exists in the list
+    @Test
+    public void testGenerateAllMoves_WithQueens() {
+        board[3][3] = 1; // Queen 1
+        board[7][7] = 1; // Queen 2
+
+        List<Map<String, Object>> moves = MoveGenerator.generateAllMoves(board, true);
+
+        assertFalse(moves.isEmpty(), "Move generation should not be empty.");
+    }
+
+    @Test
+    public void testSimulateMove_UpdatesBoardCorrectly() {
+        board[2][2] = 1; // White Queen
+        Map<String, Object> move = MoveGenerator.generateMove(board, true);
+
+        assertNotNull(move, "Move should not be null.");
+
+        int[][] newBoard = MoveGenerator.simulateMove(board, move); // Use returned board instead
+
+        int[] qnew = (int[]) move.get("queen-position-next");
+        int[] arrow = (int[]) move.get("arrow-position");
+
+        assertEquals(1, newBoard[qnew[0]][qnew[1]], "Queen should have moved to new position.");
+        assertEquals(3, newBoard[arrow[0]][arrow[1]], "Arrow should be placed.");
+        assertEquals(1, board[2][2], "Original board should remain unchanged.");
+    }
+
+    @Test
+    public void testEvaluateBoard_InitialState() {
+        board[3][3] = 1; // White Queen
+        board[6][6] = 2; // Black Queen
+
+        int score = MoveGenerator.evaluateBoard(board, true);
+
+        assertEquals(0, score, "Expected evaluation score to be 0 since both players have equal mobility.");
+    }
+
     private boolean containsMove(List<int[]> moves, int row, int col) {
         for (int[] move : moves) {
             if (move[0] == row && move[1] == col) {
