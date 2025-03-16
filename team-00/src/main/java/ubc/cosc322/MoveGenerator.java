@@ -15,12 +15,15 @@ public class MoveGenerator {
 
     public static List<Map<String, Object>> generateAllMoves(int[][] boardState, boolean isBlack) {
         List<Map<String, Object>> moves = new ArrayList<>();
+        //queenRemovedBoardState allows un-obstructed search of possible arrow moves for each queen move
+        int[][] queenRemovedBoardState=cloneBoard(boardState);
         List<int[]> queens = findQueens(boardState, isBlack);
 
         for (int[] queen : queens) {
-            List<int[]> validMoves = getValidMoves(boardState, queen[0], queen[1]);
+        	queenRemovedBoardState[queen[0]][queen[1]]=0;
+            List<int[]> validMoves = getValidMoves(queenRemovedBoardState, queen[0], queen[1]);
             for (int[] newPos : validMoves) {
-                List<int[]> arrowMoves = getValidMoves(boardState, newPos[0], newPos[1]);
+                List<int[]> arrowMoves = getValidMoves(queenRemovedBoardState, newPos[0], newPos[1]);
                 for (int[] arrow : arrowMoves) {
                     Map<String, Object> move = new HashMap<>();
                     move.put("queen-position-current", new ArrayList<>(Arrays.asList(queen[0], queen[1])));
@@ -29,6 +32,7 @@ public class MoveGenerator {
                     moves.add(move);
                 }
             }
+            queenRemovedBoardState[queen[0]][queen[1]]=isBlack? 1:2;
         }
         return moves;
     }
@@ -50,8 +54,8 @@ public class MoveGenerator {
     private static List<int[]> findQueens(int[][] boardState, boolean isBlack) {
         List<int[]> queens = new ArrayList<>();
         int queenValue = isBlack ? 1 : 2;
-        for (int i = 0; i < BOARD_SIZE; i++) {
-            for (int j = 0; j < BOARD_SIZE; j++) {
+        for (int i = 0; i < boardState.length; i++) {
+            for (int j = 0; j < boardState.length; j++) {
                 if (boardState[i][j] == queenValue) {
                     queens.add(new int[]{i, j});
                 }
@@ -66,7 +70,7 @@ public class MoveGenerator {
 
         for (int[] dir : directions) {
             int r = row + dir[0], c = col + dir[1];
-            while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && boardState[r][c] == 0) {
+            while (r >= 0 && r < boardState.length && c >= 0 && c < boardState[0].length && boardState[r][c] == 0) {
                 moves.add(new int[]{r, c});
                 r += dir[0];
                 c += dir[1];
@@ -99,9 +103,9 @@ public class MoveGenerator {
     }
 
     public static int[][] cloneBoard(int[][] board) {
-        int[][] copy = new int[BOARD_SIZE][BOARD_SIZE];
-        for (int i = 0; i < BOARD_SIZE; i++) {
-            System.arraycopy(board[i], 0, copy[i], 0, BOARD_SIZE);
+        int[][] copy = new int[board.length][board[0].length];
+        for (int i = 0; i < board.length; i++) {
+            System.arraycopy(board[i], 0, copy[i], 0, board.length);
         }
         return copy;
     }

@@ -1,8 +1,12 @@
 package ubc.cosc322;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,6 +81,39 @@ public class MoveGeneratorTest {
 
         assertEquals(0, score, "Expected evaluation score to be 0 since both players have equal mobility.");
     }
+    @Test
+    public void testGenerateAllMoves() {
+    	boolean isBlack=true;
+    	int[][] testBoard= {{1,0},{0,3}};
+    	List<Map<String, Object>> movesGenerated=MoveGenerator.generateAllMoves(testBoard, isBlack);
+    	
+    	Map<String, Object> move1 = new HashMap<>();
+        move1.put("queen-position-current", new ArrayList<>(Arrays.asList(0,0)));
+        move1.put("queen-position-next", new ArrayList<>(Arrays.asList(0,1)));
+        move1.put("arrow-position", new ArrayList<>(Arrays.asList(1,0)));
+        
+        Map<String, Object> move2 = new HashMap<>();
+        move2.put("queen-position-current", new ArrayList<>(Arrays.asList(0,0)));
+        move2.put("queen-position-next", new ArrayList<>(Arrays.asList(1,0)));
+        move2.put("arrow-position", new ArrayList<>(Arrays.asList(0,1)));
+        
+        Map<String, Object> move3 = new HashMap<>();
+        move3.put("queen-position-current", new ArrayList<>(Arrays.asList(0,0)));
+        move3.put("queen-position-next", new ArrayList<>(Arrays.asList(0,1)));
+        move3.put("arrow-position", new ArrayList<>(Arrays.asList(0,0)));
+        
+        Map<String, Object> move4 = new HashMap<>();
+        move4.put("queen-position-current", new ArrayList<>(Arrays.asList(0,0)));
+        move4.put("queen-position-next", new ArrayList<>(Arrays.asList(1,0)));
+        move4.put("arrow-position", new ArrayList<>(Arrays.asList(0,0)));
+        
+        assertTrue(movesGenerated.contains(move1)
+        		&movesGenerated.contains(move2)
+        		&movesGenerated.contains(move3)
+        		&movesGenerated.contains(move4)
+        		&movesGenerated.size()==4);
+    }
+    
 
     private boolean containsMove(List<int[]> moves, int row, int col) {
         for (int[] move : moves) {

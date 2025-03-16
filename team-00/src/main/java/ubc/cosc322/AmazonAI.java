@@ -11,7 +11,7 @@ import ygraph.ai.smartfox.games.GameMessage;
 import ygraph.ai.smartfox.games.GamePlayer;
 
 public class AmazonAI extends GamePlayer {
-
+	private final Map<Integer, Integer> hashForReversing;
     private GameClient gameClient = null;
     private BaseGameGUI gameGUI = null;
     private String userName = null;
@@ -50,6 +50,10 @@ public class AmazonAI extends GamePlayer {
         this.passwd = passwd;
         this.gameGUI = new BaseGameGUI(this);
         this.gameClient = new GameClient(userName, passwd, this);
+        this.hashForReversing = Map.of(
+                1, 10, 2, 9, 3, 8, 4, 7, 5, 6,
+                6, 5, 7, 4, 8, 3, 9, 2, 10, 1
+            );
     }
 
     @Override
@@ -72,7 +76,7 @@ public class AmazonAI extends GamePlayer {
                 boardState = new int[BOARD_SIZE][BOARD_SIZE];
                 for (int i = 0; i < BOARD_SIZE; i++) {
                     for (int j = 0; j < BOARD_SIZE; j++) {
-                        boardState[i][j] = gameState.get((10 - i) * 11 + j + 1);
+                        boardState[i][j] = gameState.get(11+i * 11 + j + 1);
                     }
                 }
                 printBoard();
@@ -107,7 +111,7 @@ public class AmazonAI extends GamePlayer {
             if (move != null) {
                 gameGUI.updateGameState(shiftPosUpByOne(move));
             }
-            isBlack = !isBlack;
+            
         }
         return true;
     }
@@ -176,6 +180,7 @@ public class AmazonAI extends GamePlayer {
         adjustedMap.put("arrow-position", adjustedArrowNewPos);
         return adjustedMap;
     }
+    
 
     @Override
     public String userName() {
