@@ -3,6 +3,7 @@ package ubc.cosc322;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import ygraph.ai.smartfox.games.BaseGameGUI;
@@ -11,7 +12,7 @@ import ygraph.ai.smartfox.games.GameMessage;
 import ygraph.ai.smartfox.games.GamePlayer;
 
 public class AmazonAI extends GamePlayer {
-	private final Map<Integer, Integer> hashForReversing;
+	
     private GameClient gameClient = null;
     private BaseGameGUI gameGUI = null;
     private String userName = null;
@@ -19,6 +20,7 @@ public class AmazonAI extends GamePlayer {
     private int[][] boardState;
     private final int BOARD_SIZE = 10;
     private boolean isBlack;
+    
 
     public static void main(String[] args) {
         /* Thread player1 = new Thread(() -> {
@@ -50,10 +52,7 @@ public class AmazonAI extends GamePlayer {
         this.passwd = passwd;
         this.gameGUI = new BaseGameGUI(this);
         this.gameClient = new GameClient(userName, passwd, this);
-        this.hashForReversing = Map.of(
-                1, 10, 2, 9, 3, 8, 4, 7, 5, 6,
-                6, 5, 7, 4, 8, 3, 9, 2, 10, 1
-            );
+        
     }
 
     @Override
@@ -87,8 +86,9 @@ public class AmazonAI extends GamePlayer {
 
         } else if (GameMessage.GAME_ACTION_START.equals(messageType)) {
             isBlack = msgDetails.get("player-black").equals(userName);
+            
             if (!isBlack) {
-                Map<String, Object> move = makeMove();
+                Map<String, Object> move = makeMove(boardState, null);
 
                 if (move != null) {
                     gameGUI.updateGameState(shiftPosUpByOne(move));
@@ -100,13 +100,11 @@ public class AmazonAI extends GamePlayer {
             System.out.println("Server acknowledged the move: " + msgDetails);
             updateBoardState(msgDetails, true);
             gameGUI.updateGameState(msgDetails);
+            Map<String, Object> prevMove=shiftPosDownByOne(msgDetails);
 
-            System.out.println("Move from server: "
-                    + (ArrayList<Integer>) msgDetails.get("queen-position-current") + "\n"
-                    + (ArrayList<Integer>) msgDetails.get("queen-position-next") + "\n"
-                    + (ArrayList<Integer>) msgDetails.get("arrow-position"));
+           
 
-            Map<String, Object> move = makeMove();
+            Map<String, Object> move = makeMove(boardState, prevMove);
 
             if (move != null) {
                 gameGUI.updateGameState(shiftPosUpByOne(move));
@@ -116,7 +114,9 @@ public class AmazonAI extends GamePlayer {
         return true;
     }
 
-    private void printBoard() {
+    
+
+	private void printBoard() {
         System.out.println("Current Board State:");
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
@@ -126,10 +126,10 @@ public class AmazonAI extends GamePlayer {
         }
     }
 
-    private Map<String, Object> makeMove() {
+    private Map<String, Object> makeMove(int[][] gameState, Map<String, Object> incomingMove) {
         System.out.println("AI is making a move...");
 
-        Map<String, Object> move = MinMax.findBestMove(boardState, isBlack);
+        Map<String, Object> move = IterativeDeepening.iterativeDeepeningSearch(boardState, isBlack, BOARD_SIZE, incomingMove).getMove();
         if (move == null) {
             System.out.println("No valid move found, game over.");
             return null;
@@ -150,6 +150,7 @@ public class AmazonAI extends GamePlayer {
         gameClient.sendMoveMessage(adjustedQueenCurPos, adjustedQueenNewPos, adjustedArrowNewPos);
 
         updateBoardState(move, false);
+        
         printBoard();
         return move;
     }
@@ -180,6 +181,16 @@ public class AmazonAI extends GamePlayer {
         adjustedMap.put("arrow-position", adjustedArrowNewPos);
         return adjustedMap;
     }
+    private Map<String, Object> shiftPosDownByOne(Map<String, Object> move) {
+        ArrayList<Integer> adjustedQueenCurPos = new ArrayList<>(Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-current"))).get(0) - 1, ((ArrayList<Integer>) (move.get("queen-position-current"))).get(1) - 1));
+        ArrayList<Integer> adjustedQueenNewPos = new ArrayList<>(Arrays.asList(((ArrayList<Integer>) (move.get("queen-position-next"))).get(0) - 1, ((ArrayList<Integer>) (move.get("queen-position-next"))).get(1) - 1));
+        ArrayList<Integer> adjustedArrowNewPos = new ArrayList<>(Arrays.asList(((ArrayList<Integer>) (move.get("arrow-position"))).get(0) - 1, ((ArrayList<Integer>) (move.get("arrow-position"))).get(1) - 1));
+        Map<String, Object> adjustedMap = new HashMap<String, Object>();
+        adjustedMap.put("queen-position-current", adjustedQueenCurPos);
+        adjustedMap.put("queen-position-next", adjustedQueenNewPos);
+        adjustedMap.put("arrow-position", adjustedArrowNewPos);
+        return adjustedMap;
+    }
     
 
     @Override
@@ -201,5 +212,8 @@ public class AmazonAI extends GamePlayer {
     public void connect() {
         gameClient = new GameClient(userName, passwd, this);
     }
+   
+    
+    
 
 }

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -113,6 +114,8 @@ public class MoveGeneratorTest {
         		&movesGenerated.contains(move4)
         		&movesGenerated.size()==4);
     }
+    
+   
     
 
     private boolean containsMove(List<int[]> moves, int row, int col) {

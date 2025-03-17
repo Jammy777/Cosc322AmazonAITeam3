@@ -9,7 +9,7 @@ import java.util.Map;
 public class MoveGenerator {
     private static final int BOARD_SIZE = 10;
 
-    public static Map<String, Object> generateMove(int[][] boardState, boolean isBlack) {
+    public static Map<String, Object> generateMove(int[][] boardState, boolean isBlack, List<int[]> queenLocations) {
         return MinMax.findBestMove(boardState, isBlack);  // Calls MinMax instead of selecting randomly
     }
 
@@ -51,7 +51,7 @@ public class MoveGenerator {
         return newBoard;
     }
 
-    private static List<int[]> findQueens(int[][] boardState, boolean isBlack) {
+    static List<int[]> findQueens(int[][] boardState, boolean isBlack) {
         List<int[]> queens = new ArrayList<>();
         int queenValue = isBlack ? 1 : 2;
         for (int i = 0; i < boardState.length; i++) {
@@ -101,6 +101,7 @@ public class MoveGenerator {
     public static boolean isGameOver(int[][] boardState) {
         return generateAllMoves(boardState, true).isEmpty() || generateAllMoves(boardState, false).isEmpty();
     }
+    
 
     public static int[][] cloneBoard(int[][] board) {
         int[][] copy = new int[board.length][board[0].length];
