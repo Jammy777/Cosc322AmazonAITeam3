@@ -114,6 +114,27 @@ public class MoveGeneratorTest {
         		&movesGenerated.contains(move4)
         		&movesGenerated.size()==4);
     }
+    @Test
+    void testUpdateQueenLocationStatic() {
+        // Initialize queen locations
+        List<int[]> queenLocations = new ArrayList<>();
+        queenLocations.add(new int[]{2, 3});
+        queenLocations.add(new int[]{5, 6});
+        queenLocations.add(new int[]{8, 9});
+        
+        // Define the move
+        Map<String, Object> move = new HashMap<>();
+        move.put("queen-position-current", new ArrayList<>(Arrays.asList(5, 6)));
+        move.put("queen-position-next", new ArrayList<>(Arrays.asList(7, 7)));
+
+        // Call the method
+        List<int[]> updatedQueens = MoveGenerator.updateQueenLocationStatic(move, queenLocations);
+
+        // Check if the queen moved correctly
+        assertArrayEquals(new int[]{2, 3}, updatedQueens.get(0)); // Unchanged
+        assertArrayEquals(new int[]{7, 7}, updatedQueens.get(1)); // Updated
+        assertArrayEquals(new int[]{8, 9}, updatedQueens.get(2)); // Unchanged
+    }
     
    
     

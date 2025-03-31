@@ -20,6 +20,7 @@ public class AmazonAI extends GamePlayer {
     private int[][] boardState;
     private final int BOARD_SIZE = 10;
     private boolean isBlack;
+    List<int[]> queenLocations;
     
 
     public static void main(String[] args) {
@@ -52,6 +53,7 @@ public class AmazonAI extends GamePlayer {
         this.passwd = passwd;
         this.gameGUI = new BaseGameGUI(this);
         this.gameClient = new GameClient(userName, passwd, this);
+        queenLocations=null;
         
     }
 
@@ -83,12 +85,13 @@ public class AmazonAI extends GamePlayer {
                     gameGUI.setGameState(gameState);
                 }
             }
+            initializeQueenLocations();
 
         } else if (GameMessage.GAME_ACTION_START.equals(messageType)) {
             isBlack = msgDetails.get("player-black").equals(userName);
             
-            if (!isBlack) {
-                Map<String, Object> move = makeMove(boardState, null);
+            if (isBlack) {
+                Map<String, Object> move = makeMove(new queenLocationBoardPair(boardState, queenLocations), null);
 
                 if (move != null) {
                     gameGUI.updateGameState(shiftPosUpByOne(move));
@@ -101,10 +104,11 @@ public class AmazonAI extends GamePlayer {
             updateBoardState(msgDetails, true);
             gameGUI.updateGameState(msgDetails);
             Map<String, Object> prevMove=shiftPosDownByOne(msgDetails);
+            queenLocations=MoveGenerator.updateQueenLocationStatic(prevMove, queenLocations);
 
            
 
-            Map<String, Object> move = makeMove(boardState, prevMove);
+            Map<String, Object> move = makeMove(new queenLocationBoardPair(boardState, queenLocations), prevMove);
 
             if (move != null) {
                 gameGUI.updateGameState(shiftPosUpByOne(move));
@@ -126,10 +130,10 @@ public class AmazonAI extends GamePlayer {
         }
     }
 
-    private Map<String, Object> makeMove(int[][] gameState, Map<String, Object> incomingMove) {
+    private Map<String, Object> makeMove(queenLocationBoardPair qlbp, Map<String, Object> incomingMove) {
         System.out.println("AI is making a move...");
 
-        Map<String, Object> move = IterativeDeepening.iterativeDeepeningSearch(boardState, isBlack, BOARD_SIZE, incomingMove).getMove();
+        Map<String, Object> move = IterativeDeepening.iterativeDeepeningSearch(qlbp, isBlack, BOARD_SIZE, incomingMove).getMove();
         if (move == null) {
             System.out.println("No valid move found, game over.");
             return null;
@@ -191,6 +195,12 @@ public class AmazonAI extends GamePlayer {
         adjustedMap.put("arrow-position", adjustedArrowNewPos);
         return adjustedMap;
     }
+    public void initializeQueenLocations() {
+    	queenLocations.addAll(MoveGenerator.findQueens(boardState, true));
+    	queenLocations.addAll(MoveGenerator.findQueens(boardState, false));
+    	
+    }
+    
     
 
     @Override

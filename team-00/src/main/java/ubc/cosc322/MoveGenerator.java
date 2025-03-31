@@ -13,11 +13,11 @@ public class MoveGenerator {
         return MinMax.findBestMove(boardState, isBlack);  // Calls MinMax instead of selecting randomly
     }
 
-    public static List<Map<String, Object>> generateAllMoves(int[][] boardState, boolean isBlack) {
+    public static List<Map<String, Object>> generateAllMoves(queenLocationBoardPair qlbp, boolean isBlack) {
         List<Map<String, Object>> moves = new ArrayList<>();
         //queenRemovedBoardState allows un-obstructed search of possible arrow moves for each queen move
-        int[][] queenRemovedBoardState=cloneBoard(boardState);
-        List<int[]> queens = findQueens(boardState, isBlack);
+        int[][] queenRemovedBoardState=cloneBoard(qlbp.getBoard());
+        List<int[]> queens = qlbp.getQueenLocations(isBlack);
 
         for (int[] queen : queens) {
         	queenRemovedBoardState[queen[0]][queen[1]]=0;
@@ -98,9 +98,7 @@ public class MoveGenerator {
         return mobilityScore != 0 ? mobilityScore : queenAdvantage;
     }
 
-    public static boolean isGameOver(int[][] boardState) {
-        return generateAllMoves(boardState, true).isEmpty() || generateAllMoves(boardState, false).isEmpty();
-    }
+   
     
 
     public static int[][] cloneBoard(int[][] board) {
@@ -110,4 +108,46 @@ public class MoveGenerator {
         }
         return copy;
     }
+    public static List<int[]> updateQueenLocationStatic(Map<String, Object> move, List<int[]> queenLocations) {
+    	ArrayList<Integer> qcurr = (ArrayList<Integer>) move.get("queen-position-current");
+        ArrayList<Integer> qnew = (ArrayList<Integer>) move.get("queen-position-next");
+        int i=0;
+        List<int[]> newQueenLocations= new ArrayList<int[]>(queenLocations);
+        for(int[] queen : queenLocations) {
+        	if (qcurr.get(0)==queen[0]&&qcurr.get(1)==queen[1]) {
+        		newQueenLocations.get(i)[0]=qnew.get(0);
+        		newQueenLocations.get(i)[1]=qnew.get(1);
+        		
+        	}
+        	i++;
+        }
+        return newQueenLocations;
+        
+        
+    }
+    public static queenLocationBoardPair simulateMove(queenLocationBoardPair state, Map<String, Object> move) {
+        // Clone the board
+        int[][] newBoard = cloneBoard(state.getBoard());
+        
+        // Update the board with the queen move and arrow shot.
+        // For instance, update the queen's position on the board:
+        ArrayList<Integer> qcurr = (ArrayList<Integer>) move.get("queen-position-current");
+        ArrayList<Integer> qnew = (ArrayList<Integer>) move.get("queen-position-next");
+        // Clear the queen's current position.
+        newBoard[qcurr.get(0)][qcurr.get(1)] = 0;
+        // Place the queen in the new position.
+        // Here, assume the queen is either 1 or 2 based on the state.
+        // For example, if it's a black queen:
+        newBoard[qnew.get(0)][qnew.get(1)] = 1;  // or 2 for white.
+        
+        // Place the arrow shot.
+        ArrayList<Integer> arrowPos = (ArrayList<Integer>) move.get("arrow-position");
+        newBoard[arrowPos.get(0)][arrowPos.get(1)] = 3;
+        
+        // Update queen locations.
+        List<int[]> newQueenLocations = updateQueenLocationStatic(move, state.getQueenLocations());
+        
+        return new queenLocationBoardPair(newBoard, newQueenLocations);
+    }
+
 }

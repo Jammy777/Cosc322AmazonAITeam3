@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IterativeDeepening{
 
-    public static valueMovePair iterativeDeepeningSearch(int[][] boardState, boolean isBlack, int timeLimitSec, Map<String, Object> lastMove) {
+    public static valueMovePair iterativeDeepeningSearch(queenLocationBoardPair qlbp, boolean isBlack, int timeLimitSec, Map<String, Object> lastMove) {
         AtomicBoolean timeUp = new AtomicBoolean(false); // Thread-safe flag
         valueMovePair bestResult = new valueMovePair(0, null);
         valueMovePair temp = new valueMovePair(0, null);
@@ -20,7 +20,7 @@ public class IterativeDeepening{
 
         int depth = 1; // Start with depth 1
         while (!timeUp.get()) { // Check flag atomically
-            valueMovePair result = miniMaxSearch(boardState, isBlack, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, lastMove, timeUp);
+            valueMovePair result = miniMaxSearch(qlbp, isBlack, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, lastMove, timeUp);
             if (result != null) {
                 temp = result; // Update best result
                 System.out.println("Depth " + depth + " evaluation: " +  result.getMove() + " with evaluation " + result.getValue());
@@ -40,32 +40,32 @@ public class IterativeDeepening{
         return bestResult;
     }
 
-    private static valueMovePair miniMaxSearch(int[][] boardState, boolean isBlack, int depth,
+    private static valueMovePair miniMaxSearch(queenLocationBoardPair qlbp, boolean isBlack, int depth,
                                                 int alpha, int beta, Map<String, Object> lastMove, AtomicBoolean timeUp) {
         int currentDepth = 0;
         // For simplicity, if it's isBlack turn, call maxValue; adjust as per your design.
-        return maxValue(boardState, isBlack, depth, currentDepth, alpha, beta, lastMove, timeUp);
+        return maxValue(qlbp, isBlack, depth, currentDepth, alpha, beta, lastMove, timeUp);
     }
 
-    public static valueMovePair maxValue(int[][] boardState, boolean isBlack, int depth, int currentDepth, int alpha, int beta,
+    public static valueMovePair maxValue(queenLocationBoardPair qlbp, boolean isBlack, int depth, int currentDepth, int alpha, int beta,
                                          Map<String, Object> receivedMove, AtomicBoolean timeUp) {
         // Check time flag at the start of the call.
         if (timeUp.get() || currentDepth >= depth) {
-            return new valueMovePair(evaluate(boardState, isBlack), receivedMove);
+            return new valueMovePair(evaluate(qlbp, isBlack), receivedMove);
         }
         
-        if (isTerminal(boardState, isBlack)) {
-            return new valueMovePair(evaluate(boardState, isBlack), null);
+        if (isTerminal(qlbp, isBlack)) {
+            return new valueMovePair(evaluate(qlbp, isBlack), null);
         }
         
         int bestValue = Integer.MIN_VALUE;
         valueMovePair bestPair = new valueMovePair(bestValue, null);
-        for (Map<String, Object> move : MoveGenerator.generateAllMoves(boardState, isBlack)) {
+        for (Map<String, Object> move : MoveGenerator.generateAllMoves(qlbp, isBlack)) {
             // Check time in the loop as well
             if (timeUp.get()) {
                 break;
             }
-            valueMovePair candidate = minValue(MoveGenerator.simulateMove(boardState, move), isBlack, depth, currentDepth + 1, alpha, beta, move, timeUp);
+            valueMovePair candidate = minValue(MoveGenerator.simulateMove(qlbp, move), isBlack, depth, currentDepth + 1, alpha, beta, move, timeUp);
             if (candidate.getValue() > bestPair.getValue()) {
                 bestPair = new valueMovePair(candidate.getValue(), move);
                 alpha = Math.max(alpha, candidate.getValue());
@@ -77,24 +77,24 @@ public class IterativeDeepening{
         return bestPair;
     }
 
-    public static valueMovePair minValue(int[][] boardState, boolean isBlack, int depth, int currentDepth, int alpha, int beta,
+    public static valueMovePair minValue(queenLocationBoardPair qlbp, boolean isBlack, int depth, int currentDepth, int alpha, int beta,
                                          Map<String, Object> receivedMove, AtomicBoolean timeUp) {
         if (timeUp.get() || currentDepth >= depth) {
-            return new valueMovePair(evaluate(boardState, isBlack), receivedMove);
+            return new valueMovePair(evaluate(qlbp, isBlack), receivedMove);
         }
         
-        if (isTerminal(boardState, !isBlack)) {
-            return new valueMovePair(evaluate(boardState, isBlack), null);
+        if (isTerminal(qlbp, !isBlack)) {
+            return new valueMovePair(evaluate(qlbp, isBlack), null);
         }
         
         int bestValue = Integer.MAX_VALUE;
         valueMovePair bestPair = new valueMovePair(bestValue, null);
         // Note: For minValue, we generate moves for the opponent (adjust if needed)
-        for (Map<String, Object> move : MoveGenerator.generateAllMoves(boardState, !isBlack)) {
+        for (Map<String, Object> move : MoveGenerator.generateAllMoves(qlbp, !isBlack)) {
             if (timeUp.get()) {
                 break;
             }
-            valueMovePair candidate = maxValue(MoveGenerator.simulateMove(boardState, move), isBlack, depth, currentDepth + 1, alpha, beta, move, timeUp);
+            valueMovePair candidate = maxValue(MoveGenerator.simulateMove(qlbp, move), isBlack, depth, currentDepth + 1, alpha, beta, move, timeUp);
             if (candidate.getValue() < bestPair.getValue()) {
                 bestPair = new valueMovePair(candidate.getValue(), move);
                 beta = Math.min(beta, candidate.getValue());
@@ -107,25 +107,25 @@ public class IterativeDeepening{
     }
 
     // Placeholder: Evaluate board state using a heuristic.
-    public static int evaluate(int[][] boardState, boolean isBlack) {
+    public static int evaluate(queenLocationBoardPair qlbp, boolean isBlack) {
         int whiteTotal = 0;
         int blackTotal = 0;
-        List<int[]> whiteQueens = MoveGenerator.findQueens(boardState, false);
-        List<int[]> blackQueens = MoveGenerator.findQueens(boardState, true);
+        List<int[]> whiteQueens = qlbp.getQueenLocations(false);
+        List<int[]> blackQueens = qlbp.getQueenLocations(true);
         for (int[] queen : whiteQueens) {
-            List<int[]> validMoves = MoveGenerator.getValidMoves(boardState, queen[0], queen[1]);
+            List<int[]> validMoves = MoveGenerator.getValidMoves(qlbp.getBoard(), queen[0], queen[1]);
             whiteTotal += validMoves.size();
         }
         for (int[] queen : blackQueens) {
-            List<int[]> validMoves = MoveGenerator.getValidMoves(boardState, queen[0], queen[1]);
+            List<int[]> validMoves = MoveGenerator.getValidMoves(qlbp.getBoard(), queen[0], queen[1]);
             blackTotal += validMoves.size();
         }
         return isBlack ? (blackTotal - whiteTotal) : (whiteTotal - blackTotal);
     }
 
     // Placeholder: Determine if the board state is terminal (game over) for the given player.
-    public static boolean isTerminal(int[][] boardState, boolean isBlack) {
-        List<int[]> queens = isBlack ? MoveGenerator.findQueens(boardState, true) : MoveGenerator.findQueens(boardState, false);
+    public static boolean isTerminal(queenLocationBoardPair qlbp, boolean isBlack) {
+        List<int[]> queens = qlbp.getQueenLocations(isBlack);
         int[][] directions = {
             {-1, 0}, {1, 0}, {0, -1}, {0, 1},
             {-1, -1}, {-1, 1}, {1, -1}, {1, 1}
@@ -135,7 +135,7 @@ public class IterativeDeepening{
             int row = queen[0], col = queen[1];
             for (int[] dir : directions) {
                 int r = row + dir[0], c = col + dir[1];
-                if (r >= 0 && r < boardState.length && c >= 0 && c < boardState[0].length && boardState[r][c] == 0) {
+                if (r >= 0 && r < qlbp.getBoard().length && c >= 0 && c < qlbp.getBoard()[0].length && qlbp.getBoard()[r][c] == 0) {
                     return false; // Found a move, so not terminal.
                 }
             }
