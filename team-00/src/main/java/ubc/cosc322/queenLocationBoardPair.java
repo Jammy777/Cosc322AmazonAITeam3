@@ -16,18 +16,18 @@ public class queenLocationBoardPair {
 	public List<int[]> getQueenLocations() {
 		return queenLocations;
 	}
-	public List<int[]> getQueenLocations(boolean isBlack) {
-		if (isBlack) {
-			return queenLocations.subList(0, 4);
-		}else {
-			return queenLocations.subList(4, 7);
-		}
-		
-	}
+	
 	public void setBoard(int [][] board) {
 		this.board=board;
 	}
 	public void setQueenLocation(List<int[]> queenLocations) {
 		this.queenLocations=queenLocations;
+	}
+	public List<int[]> getQueenLocations(boolean isBlack) {
+		if (isBlack) {
+			return queenLocations.subList(0,  4);
+		}else {
+			return queenLocations.subList(4,  8);
+		}
 	}
 }

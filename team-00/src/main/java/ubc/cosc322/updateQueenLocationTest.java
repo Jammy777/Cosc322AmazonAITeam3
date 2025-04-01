@@ -23,7 +23,7 @@ class updateQueenLocationTest {
         // Define the move
         Map<String, Object> move = new HashMap<>();
         move.put("queen-position-current", new ArrayList<>(Arrays.asList(5, 6)));
-        move.put("queen-position-next", new ArrayList<>(Arrays.asList(7, 7)));
+        move.put("queen-position-next", new ArrayList<>(Arrays.asList(6, 7)));
 
         // Call the method
         List<int[]> updatedQueens = MoveGenerator.updateQueenLocationStatic(move, queenLocations);

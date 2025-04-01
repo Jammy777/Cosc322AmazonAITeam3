@@ -53,7 +53,7 @@ public class AmazonAI extends GamePlayer {
         this.passwd = passwd;
         this.gameGUI = new BaseGameGUI(this);
         this.gameClient = new GameClient(userName, passwd, this);
-        queenLocations=null;
+        queenLocations=new ArrayList<int[]>();
         
     }
 
@@ -84,8 +84,9 @@ public class AmazonAI extends GamePlayer {
                 if (gameGUI != null) {
                     gameGUI.setGameState(gameState);
                 }
+                initializeQueenLocations();
             }
-            initializeQueenLocations();
+            
 
         } else if (GameMessage.GAME_ACTION_START.equals(messageType)) {
             isBlack = msgDetails.get("player-black").equals(userName);
@@ -133,7 +134,7 @@ public class AmazonAI extends GamePlayer {
     private Map<String, Object> makeMove(queenLocationBoardPair qlbp, Map<String, Object> incomingMove) {
         System.out.println("AI is making a move...");
 
-        Map<String, Object> move = IterativeDeepening.iterativeDeepeningSearch(qlbp, isBlack, BOARD_SIZE, incomingMove).getMove();
+        Map<String, Object> move = IterativeDeepening.iterativeDeepeningSearch(qlbp, isBlack, 28, incomingMove).getMove();
         if (move == null) {
             System.out.println("No valid move found, game over.");
             return null;
@@ -154,6 +155,7 @@ public class AmazonAI extends GamePlayer {
         gameClient.sendMoveMessage(adjustedQueenCurPos, adjustedQueenNewPos, adjustedArrowNewPos);
 
         updateBoardState(move, false);
+        updateQueenLocation(move, queenLocations);
         
         printBoard();
         return move;
@@ -199,6 +201,23 @@ public class AmazonAI extends GamePlayer {
     	queenLocations.addAll(MoveGenerator.findQueens(boardState, true));
     	queenLocations.addAll(MoveGenerator.findQueens(boardState, false));
     	
+    }
+    public void updateQueenLocation(Map<String, Object> move, List<int[]> queenLocations) {
+    	ArrayList<Integer> qcurr = (ArrayList<Integer>) move.get("queen-position-current");
+        ArrayList<Integer> qnew = (ArrayList<Integer>) move.get("queen-position-next");
+        int i=0;
+        List<int[]> newQueenLocations= new ArrayList<int[]>(queenLocations);
+        for(int[] queen : queenLocations) {
+        	if (qcurr.get(0)==queen[0]&&qcurr.get(1)==queen[1]) {
+        		newQueenLocations.get(i)[0]=qnew.get(0);
+        		newQueenLocations.get(i)[1]=qnew.get(1);
+        		
+        	}
+        	i++;
+        }
+        this.queenLocations=newQueenLocations;
+        
+        
     }
     
     
