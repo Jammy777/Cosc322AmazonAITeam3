@@ -38,6 +38,32 @@ public class MoveGenerator {
         
         return moves;
     }
+    public static List<Map<String, Object>> generateAllQueenMoves(queenLocationBoardPair qlbp, boolean isBlack) {
+        List<Map<String, Object>> moves = new ArrayList<>();
+        //queenRemovedBoardState allows un-obstructed search of possible arrow moves for each queen move
+        int[][] queenRemovedBoardState=cloneBoard(qlbp.getBoard());
+        List<int[]> queens = qlbp.getQueenLocations(isBlack);
+        
+        
+
+        for (int[] queen : queens) {
+        	queenRemovedBoardState[queen[0]][queen[1]]=0;
+            List<int[]> validMoves = getValidMoves(queenRemovedBoardState, queen[0], queen[1]);
+            for (int[] newPos : validMoves) {
+                
+                    Map<String, Object> move = new HashMap<>();
+                    move.put("queen-position-current", new ArrayList<>(Arrays.asList(queen[0], queen[1])));
+                    move.put("queen-position-next", new ArrayList<>(Arrays.asList(newPos[0], newPos[1])));
+                    
+                    moves.add(move);
+                
+            }
+            queenRemovedBoardState[queen[0]][queen[1]]=isBlack? 1:2;
+        }
+        
+        
+        return moves;
+    }
     public static List<Map<String, Object>> generateAllMoves(int[][] board, boolean isBlack) {
         List<Map<String, Object>> moves = new ArrayList<>();
         //queenRemovedBoardState allows un-obstructed search of possible arrow moves for each queen move
@@ -61,6 +87,7 @@ public class MoveGenerator {
         }
         return moves;
     }
+    
 
     public static int[][] simulateMove(int[][] boardState, Map<String, Object> move) {
         int[][] newBoard = cloneBoard(boardState);
