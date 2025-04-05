@@ -66,7 +66,7 @@ public class AmazonAI extends GamePlayer {
         if (gameGUI != null) {
             gameGUI.setRoomInformation(gameClient.getRoomList());
         }
-        gameClient.joinRoom("Okanagan Lake");
+        gameClient.joinRoom("Bear Lake");
     }
 
     @Override
@@ -139,16 +139,22 @@ public class AmazonAI extends GamePlayer {
     private Map<String, Object> makeMove(queenLocationBoardPair qlbp, Map<String, Object> incomingMove) {
     	String usedHeuristic=heuristic;
         System.out.println("AI is making a move...");
-        if (heuristic=="mixed"&&endgameCheck()) {
+        if ((heuristic=="mixed"&&endgameCheck())||(heuristic=="mobileAndKingTerritoryMixed"&&endgameCheck())) {
         	usedHeuristic="minimumDistance";
+        	
         	System.out.println("Endgame detected! Switching to Minimum Distance");
         }
-        if (heuristic=="mixed"&&!endgameCheck()) {
+        if (heuristic=="mixed"&!endgameCheck()) {
         	usedHeuristic="mobility";
         	
         }
+        
 
-        Map<String, Object> move = IterativeDeepening.iterativeDeepeningSearch(qlbp, isBlack, 10, incomingMove, usedHeuristic).getMove();
+        valueMovePair vmp = IterativeDeepening.iterativeDeepeningSearch(qlbp, isBlack, 5, incomingMove, usedHeuristic);
+        Map<String, Object> move=null;
+        if (vmp!=null) {
+        	move=vmp.getMove();
+        }
         if (move == null) {
             System.out.println("No valid move found, game over.");
             return null;
@@ -183,7 +189,7 @@ public class AmazonAI extends GamePlayer {
         boolean reachableCondition=(totalReachable<=60);
         return mobilityCondition||reachableCondition;
     }
-    int countReachableSquares(List<int[]> queens, int[][] board) {
+    static int countReachableSquares(List<int[]> queens, int[][] board) {
     	int boardSize = board.length;
         int[][] distances = new int[boardSize][boardSize];
         for (int i = 0; i < boardSize; i++) {

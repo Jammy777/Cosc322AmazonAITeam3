@@ -2,172 +2,210 @@ package ubc.cosc322;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class IterativeDeepening {
 
-	public static valueMovePair iterativeDeepeningSearch(queenLocationBoardPair qlbp, boolean isBlack, int timeLimitSec,
-			Map<String, Object> lastMove, String heuristic) {
-		AtomicBoolean timeUp = new AtomicBoolean(false); // Thread-safe flag
-		valueMovePair bestResult = new valueMovePair(0, null);
-		valueMovePair temp = new valueMovePair(0, null);
+    static valueMovePair bestResult;
+    static int depth;
+    static valueMovePair temp;
+    static valueMovePair result;
+    static long startTime;
+    static long timeLimitMillis;
+    static ForkJoinPool pool = new ForkJoinPool(); // Static pool for parallel execution
 
-		// Scheduled executor to stop search after the time limit
-		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-		scheduler.schedule(() -> {
-			timeUp.set(true);
-			System.out.println("Time's up! Returning best result found so far...");
-		}, timeLimitSec, TimeUnit.SECONDS);
+    public static valueMovePair iterativeDeepeningSearch(queenLocationBoardPair qlbp, boolean isBlack, int timeLimitSec,
+                                                         Map<String, Object> lastMove, String heuristic) {
 
-		int depth = 1; // Start with depth 1
-		while (!timeUp.get()) { // Check flag atomically
-			valueMovePair result = miniMaxSearch(qlbp, isBlack, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, lastMove,
-					timeUp, heuristic);
-			if (result != null) {
-				temp = result; // Update best result
-				System.out.println("Depth " + depth + " evaluation: " + result.getMove() + " with evaluation "
-						+ result.getValue() +" using "+heuristic);
-			}
-			if (timeUp.get()) {
-				System.out.println("Evaluation at depth = " + depth + " got cut off, returning result from depth = "
-						+ (depth - 1));
-				return bestResult;
-			} else {
-				bestResult = temp;
-			}
+        bestResult = null;
+        temp = null;
+        result = null;
+        depth = 1;
+        startTime = System.currentTimeMillis();
+        timeLimitMillis = timeLimitSec * 1000;
 
-			depth++; // Increase depth
-		}
+        while (System.currentTimeMillis() - startTime < timeLimitMillis) {
+            result = miniMaxSearch(qlbp, isBlack, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, lastMove, heuristic);
 
-		scheduler.shutdown();
-		System.out.println("Final best result from Iterative Deepening: " + bestResult.getValue() +" using "+heuristic);
-		return bestResult;
-	}
+            if (result != null && result.getMove() != null && System.currentTimeMillis() - startTime < timeLimitMillis) {
+                temp = result;
+                System.out.println("Depth " + depth + " evaluation: " + result.getMove() + " with evaluation "
+                        + result.getValue() + " using " + heuristic);
+            }
 
-	private static valueMovePair miniMaxSearch(queenLocationBoardPair qlbp, boolean isBlack, int depth, int alpha,
-			int beta, Map<String, Object> lastMove, AtomicBoolean timeUp, String heuristic) {
-		int currentDepth = 0;
-		
-		return maxValue(qlbp, isBlack, depth, currentDepth, alpha, beta, lastMove, timeUp, heuristic);
-	}
+            if (temp != null && temp.getMove() != null && System.currentTimeMillis() - startTime < timeLimitMillis) {
+                bestResult = temp;
+            }
 
-	public static valueMovePair maxValue(queenLocationBoardPair qlbp, boolean isBlack, int depth, int currentDepth,
-			int alpha, int beta, Map<String, Object> receivedMove, AtomicBoolean timeUp, String heuristic) {
-		if (timeUp.get() || currentDepth >= depth) {
-			switch (heuristic) {
-			case ("mobility"): return new valueMovePair(Heuristics.mobility(qlbp, isBlack), receivedMove);
-			case ("minimumDistance"): return new valueMovePair(Heuristics.minimumDistance(qlbp, isBlack), receivedMove);
-			default: return new valueMovePair(Heuristics.mobility(qlbp, isBlack), receivedMove);
-			}
-		}
+            if (System.currentTimeMillis() - startTime < timeLimitMillis) {
+                depth++;
+            }
+        }
 
-		if (isTerminal(qlbp, isBlack)) {
-			
-			switch (heuristic) {
-			case ("mobility"): return new valueMovePair(Heuristics.mobility(qlbp, isBlack), null);
-			case ("minimumDistance"): return new valueMovePair(Heuristics.minimumDistance(qlbp, isBlack), null);
-			default: return new valueMovePair(Heuristics.mobility(qlbp, isBlack), null);
-			}
-		}
+        System.out.println("Evaluation at depth = " + depth + " got cut off, returning result from depth = "
+                + (depth - 1));
 
-		AtomicInteger alphaAtomic = new AtomicInteger(alpha);
-		ConcurrentHashMap<Integer, Map<String, Object>> bestMoveMap = new ConcurrentHashMap<>();
+        if (bestResult != null) {
+            System.out.println("Final best result from Iterative Deepening: " + bestResult.getMove() + " using " + heuristic);
+        }
 
-		List<valueMovePair> results = MoveGenerator.generateAllMoves(qlbp, isBlack).parallelStream()
-				.takeWhile(move -> !timeUp.get()) // Stop early if time runs out
-				.map(move -> {
-					valueMovePair candidate = minValue(MoveGenerator.simulateMove(qlbp, move), isBlack, depth,
-							currentDepth + 1, alphaAtomic.get(), beta, move, timeUp, heuristic);
-					synchronized (bestMoveMap) {
-						if (candidate.getValue() > alphaAtomic.get()) {
-							alphaAtomic.set(candidate.getValue());
-							bestMoveMap.put(candidate.getValue(), move);
-						}
-					}
-					return candidate;
-				}).toList();
+        return bestResult;
+    }
 
-		int bestValue = results.stream().mapToInt(valueMovePair::getValue).max().orElse(Integer.MIN_VALUE);
-		return new valueMovePair(bestValue, bestMoveMap.get(bestValue));
-	}
+    private static valueMovePair miniMaxSearch(queenLocationBoardPair qlbp, boolean isBlack, int depth, int alpha,
+                                               int beta, Map<String, Object> lastMove, String heuristic) {
+        int currentDepth = 0;
+        return maxValue(qlbp, isBlack, depth, currentDepth, alpha, beta, lastMove, heuristic);
+    }
 
-	public static valueMovePair minValue(queenLocationBoardPair qlbp, boolean isBlack, int depth, int currentDepth,
-			int alpha, int beta, Map<String, Object> receivedMove, AtomicBoolean timeUp, String heuristic) {
-		if (timeUp.get() || currentDepth >= depth) {
-			switch (heuristic) {
-			case ("mobility"): return new valueMovePair(Heuristics.mobility(qlbp, isBlack), receivedMove);
-			case ("minimumDistance"): return new valueMovePair(Heuristics.minimumDistance(qlbp, isBlack), receivedMove);
-			default: return new valueMovePair(Heuristics.mobility(qlbp, isBlack), receivedMove);
-			}
-		}
+    public static valueMovePair maxValue(queenLocationBoardPair qlbp, boolean isBlack, int depth, int currentDepth,
+                                         int alpha, int beta, Map<String, Object> receivedMove, String heuristic) {
 
-		if (isTerminal(qlbp, !isBlack)) {
-			switch (heuristic) {
-			case ("mobility"): return new valueMovePair(Heuristics.mobility(qlbp, isBlack), null);
-			case ("minimumDistance"): return new valueMovePair(Heuristics.minimumDistance(qlbp, isBlack), null);
-			default: return new valueMovePair(Heuristics.mobility(qlbp, isBlack), null);
-			}
-		}
+        if (isTerminal(qlbp, isBlack)) {
+            return evaluateTerminal(qlbp, isBlack, heuristic, null);
+        }
 
-		AtomicInteger betaAtomic = new AtomicInteger(beta);
-		ConcurrentHashMap<Integer, Map<String, Object>> bestMoveMap = new ConcurrentHashMap<>();
+        if (System.currentTimeMillis() - startTime >= timeLimitMillis || currentDepth >= depth) {
+            return evaluateTerminal(qlbp, isBlack, heuristic, receivedMove);
+        }
 
-		List<valueMovePair> results = MoveGenerator.generateAllMoves(qlbp, !isBlack).parallelStream()
-				.takeWhile(move -> !timeUp.get()) // Stop early if time runs out
-				.map(move -> {
-					valueMovePair candidate = maxValue(MoveGenerator.simulateMove(qlbp, move), isBlack, depth,
-							currentDepth + 1, alpha, betaAtomic.get(), move, timeUp, heuristic);
-					synchronized (bestMoveMap) {
-						if (candidate.getValue() < betaAtomic.get()) {
-							betaAtomic.set(candidate.getValue());
-							bestMoveMap.put(candidate.getValue(), move);
-						}
-					}
-					return candidate;
-				}).toList();
+        AtomicInteger alphaAtomic = new AtomicInteger(alpha);
+        ConcurrentHashMap<Integer, Map<String, Object>> bestMoveMap = new ConcurrentHashMap<>();
+        List<Map<String, Object>> allMoves = MoveGenerator.generateAllMoves(qlbp, isBlack);
 
-		int bestValue = results.stream().mapToInt(valueMovePair::getValue).min().orElse(Integer.MAX_VALUE);
-		return new valueMovePair(bestValue, bestMoveMap.get(bestValue));
-	}
+        List<ForkJoinTask<valueMovePair>> tasks = new ArrayList<>();
 
-	
+        for (Map<String, Object> move : allMoves) {
+            if (System.currentTimeMillis() - startTime >= timeLimitMillis) break;
+            ForkJoinTask<valueMovePair> task = pool.submit(() -> {
+                valueMovePair candidate = minValue(
+                        MoveGenerator.simulateMove(qlbp, move), isBlack, depth, currentDepth + 1,
+                        alphaAtomic.get(), beta, move, heuristic);
+                synchronized (bestMoveMap) {
+                    if (candidate.getValue() > alphaAtomic.get()) {
+                        alphaAtomic.set(candidate.getValue());
+                        bestMoveMap.put(candidate.getValue(), move);
+                    }
+                }
+                return candidate;
+            });
+            tasks.add(task);
+        }
+
+        int bestValue = Integer.MIN_VALUE;
+        for (ForkJoinTask<valueMovePair> task : tasks) {
+            try {
+                valueMovePair candidate = task.get();
+                bestValue = Math.max(bestValue, candidate.getValue());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return new valueMovePair(bestValue, bestMoveMap.get(bestValue));
+    }
+
+    public static valueMovePair minValue(queenLocationBoardPair qlbp, boolean isBlack, int depth, int currentDepth,
+                                         int alpha, int beta, Map<String, Object> receivedMove, String heuristic) {
+
+        if (isTerminal(qlbp, !isBlack)) {
+            return evaluateTerminal(qlbp, isBlack, heuristic, null);
+        }
+
+        if (System.currentTimeMillis() - startTime >= timeLimitMillis || currentDepth >= depth) {
+            return evaluateTerminal(qlbp, isBlack, heuristic, receivedMove);
+        }
+
+        AtomicInteger betaAtomic = new AtomicInteger(beta);
+        ConcurrentHashMap<Integer, Map<String, Object>> bestMoveMap = new ConcurrentHashMap<>();
+        List<Map<String, Object>> allMoves = MoveGenerator.generateAllMoves(qlbp, !isBlack);
+
+        List<ForkJoinTask<valueMovePair>> tasks = new ArrayList<>();
+
+        for (Map<String, Object> move : allMoves) {
+            if (System.currentTimeMillis() - startTime >= timeLimitMillis) break;
+            ForkJoinTask<valueMovePair> task = pool.submit(() -> {
+                valueMovePair candidate = maxValue(
+                        MoveGenerator.simulateMove(qlbp, move), isBlack, depth, currentDepth + 1,
+                        alpha, betaAtomic.get(), move, heuristic);
+                synchronized (bestMoveMap) {
+                    if (candidate.getValue() < betaAtomic.get()) {
+                        betaAtomic.set(candidate.getValue());
+                        bestMoveMap.put(candidate.getValue(), move);
+                    }
+                }
+                return candidate;
+            });
+            tasks.add(task);
+        }
+
+        int bestValue = Integer.MAX_VALUE;
+        for (ForkJoinTask<valueMovePair> task : tasks) {
+            try {
+                valueMovePair candidate = task.get();
+                bestValue = Math.min(bestValue, candidate.getValue());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return new valueMovePair(bestValue, bestMoveMap.get(bestValue));
+    }
+
+    private static valueMovePair evaluateTerminal(queenLocationBoardPair qlbp, boolean isBlack, String heuristic,
+                                                  Map<String, Object> move) {
+        switch (heuristic) {
+            case "mobility":
+                return new valueMovePair(Heuristics.mobility(qlbp, isBlack), move);
+            case "minimumDistance":
+                return new valueMovePair(Heuristics.minimumDistance(qlbp, isBlack), move);
+            case "mixed":
+            	return new valueMovePair(Heuristics.mobility(qlbp, isBlack), move);
+            case "mobileAndKingTerritoryMixed":
+                return new valueMovePair((int) ( Heuristics.KingTerritoryControl(qlbp, isBlack))
+                        + 2 *Heuristics.mobility(qlbp, isBlack) , move);
+            default:
+                return new valueMovePair(Heuristics.mobility(qlbp, isBlack), move);
+        }
+    }
+
+    public static boolean isTerminal(queenLocationBoardPair qlbp, boolean isBlack) {
+        List<int[]> queens = qlbp.getQueenLocations(isBlack);
+        int[][] directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1} };
+
+        for (int[] queen : queens) {
+            int row = queen[0], col = queen[1];
+            for (int[] dir : directions) {
+                int r = row + dir[0], c = col + dir[1];
+                if (r >= 0 && r < qlbp.getBoard().length && c >= 0 && c < qlbp.getBoard()[0].length
+                        && qlbp.getBoard()[r][c] == 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    public static boolean isTerminal(int[][] board, boolean isBlack) {
+        List<int[]> queens = MoveGenerator.findQueens(board, isBlack);
+        int[][] directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1} };
+
+        for (int[] queen : queens) {
+            int row = queen[0], col = queen[1];
+            for (int[] dir : directions) {
+                int r = row + dir[0], c = col + dir[1];
+                if (r >= 0 && r < board.length && c >= 0 && c < board[0].length
+                        && board[r][c] == 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
 
-	// Placeholder: Determine if the board state is terminal (game over) for the
-	// given player.
-	public static boolean isTerminal(queenLocationBoardPair qlbp, boolean isBlack) {
-		List<int[]> queens = qlbp.getQueenLocations(isBlack);
-		int[][] directions = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 }, { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } };
 
-		for (int[] queen : queens) {
-			int row = queen[0], col = queen[1];
-			for (int[] dir : directions) {
-				int r = row + dir[0], c = col + dir[1];
-				if (r >= 0 && r < qlbp.getBoard().length && c >= 0 && c < qlbp.getBoard()[0].length
-						&& qlbp.getBoard()[r][c] == 0) {
-					return false; // Found a move, so not terminal.
-				}
-			}
-		}
-		return true;
-	}
 
-	public static boolean isTerminal(int[][] board, boolean isBlack) { //used for testing
-		List<int[]> queens = MoveGenerator.findQueens(board, isBlack);
-		int[][] directions = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 }, { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } };
 
-		for (int[] queen : queens) {
-			int row = queen[0], col = queen[1];
-			for (int[] dir : directions) {
-				int r = row + dir[0], c = col + dir[1];
-				if (r >= 0 && r < board.length && c >= 0 && c < board[0].length && board[r][c] == 0) {
-					return false; // Found a move, so not terminal.
-				}
-			}
-		}
-		return true;
-	}
 
 	// Main method to set up a board and run iterative deepening for testing.
 	public static void main(String[] args) {
@@ -229,7 +267,7 @@ public class IterativeDeepening {
 
 		// Run iterative deepening search for black to move.
 		System.out.println("\nRunning iterative deepening search for black to move:");
-		valueMovePair bestBlackMove = iterativeDeepeningSearch(initialState, true, 28, dummyMove, "mobility");
+		valueMovePair bestBlackMove = iterativeDeepeningSearch(initialState, true, 28, dummyMove, "mobileAndKingTerritoryMixedy");
 		System.out.println(
 				"Best move for black: " + bestBlackMove.getMove() + " with evaluation " + bestBlackMove.getValue());
 	}
