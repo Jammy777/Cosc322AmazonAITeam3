@@ -131,25 +131,7 @@ public class MoveGenerator {
         return moves;
     }
 
-    public static int evaluateBoard(int[][] boardState, boolean isMaximizing) {
-        int blackMobility = 0, whiteMobility = 0;
-        int blackCount = 0, whiteCount = 0;
-
-        for (int[] queen : findQueens(boardState, true)) {
-            blackMobility += getValidMoves(boardState, queen[0], queen[1]).size();
-            blackCount++;
-        }
-        for (int[] queen : findQueens(boardState, false)) {
-            whiteMobility += getValidMoves(boardState, queen[0], queen[1]).size();
-            whiteCount++;
-        }
-
-        int mobilityScore = blackMobility - whiteMobility;
-        int queenAdvantage = 10 * (blackCount - whiteCount);
-
-        return mobilityScore != 0 ? mobilityScore : queenAdvantage;
-    }
-
+    
    
     
 

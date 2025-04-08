@@ -150,7 +150,7 @@ public class AmazonAI extends GamePlayer {
         }
         
 
-        valueMovePair vmp = IterativeDeepening.iterativeDeepeningSearch(qlbp, isBlack, 5, incomingMove, usedHeuristic);
+        valueMovePair vmp = IterativeDeepening.iterativeDeepeningSearch(qlbp, isBlack, 28, incomingMove, usedHeuristic);
         Map<String, Object> move=null;
         if (vmp!=null) {
         	move=vmp.getMove();

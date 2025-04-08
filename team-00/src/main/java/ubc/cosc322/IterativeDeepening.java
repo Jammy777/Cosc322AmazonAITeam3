@@ -163,7 +163,7 @@ public class IterativeDeepening {
             	return new valueMovePair(Heuristics.mobility(qlbp, isBlack), move);
             case "mobileAndKingTerritoryMixed":
                 return new valueMovePair((int) ( Heuristics.KingTerritoryControl(qlbp, isBlack))
-                        + 2 *Heuristics.mobility(qlbp, isBlack) , move);
+                        +  Heuristics.mobility(qlbp, isBlack) , move);
             default:
                 return new valueMovePair(Heuristics.mobility(qlbp, isBlack), move);
         }

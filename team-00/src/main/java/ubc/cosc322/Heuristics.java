@@ -1,6 +1,5 @@
 package ubc.cosc322;
 
-import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -105,6 +104,21 @@ class Heuristics{
         }
         for (int[] queen : blackQueens) {
             List<int[]> validMoves = MoveGenerator.getValidMoves(qlbp.getBoard(), queen[0], queen[1]);
+            blackTotal += validMoves.size();
+        }
+        return isBlack ? (blackTotal - whiteTotal) : (whiteTotal - blackTotal);
+	}
+	public static int mobilityTesting(int[][] board, boolean isBlack) {
+		int whiteTotal = 0;
+        int blackTotal = 0;
+        List<int[]> whiteQueens = MoveGenerator.findQueens(board, false);
+        List<int[]> blackQueens = MoveGenerator.findQueens(board, true);
+        for (int[] queen : whiteQueens) {
+            List<int[]> validMoves = MoveGenerator.getValidMoves(board, queen[0], queen[1]);
+            whiteTotal += validMoves.size();
+        }
+        for (int[] queen : blackQueens) {
+            List<int[]> validMoves = MoveGenerator.getValidMoves(board, queen[0], queen[1]);
             blackTotal += validMoves.size();
         }
         return isBlack ? (blackTotal - whiteTotal) : (whiteTotal - blackTotal);

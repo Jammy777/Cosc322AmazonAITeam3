@@ -6,7 +6,7 @@ public class AmazonAITest {
     public static void main(String[] args) {
         // Create two instances of the AI bot to play against each other
         Thread player1 = new Thread(() -> {
-            AmazonAI player = new AmazonAI("Team_3", "", "mixed");
+            AmazonAI player = new AmazonAI("Team_3", "", "mobileAndKingTerritoryMixed");
             if (player.getGameGUI() == null) {
                 player.Go();
             } else {

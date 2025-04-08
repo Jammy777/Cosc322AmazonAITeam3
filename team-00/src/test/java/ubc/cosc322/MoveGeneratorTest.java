@@ -78,7 +78,7 @@ public class MoveGeneratorTest {
         board[3][3] = 1; // White Queen
         board[6][6] = 2; // Black Queen
 
-        int score = MoveGenerator.evaluateBoard(board, true);
+        int score = Heuristics.mobilityTesting(board, true);
 
         assertEquals(0, score, "Expected evaluation score to be 0 since both players have equal mobility.");
     }
