@@ -3,8 +3,10 @@ package ubc.cosc322;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import ygraph.ai.smartfox.games.BaseGameGUI;
 import ygraph.ai.smartfox.games.GameClient;
@@ -20,6 +22,8 @@ public class AmazonAI extends GamePlayer {
     private int[][] boardState;
     private final int BOARD_SIZE = 10;
     private boolean isBlack;
+    List<int[]> queenLocations;
+    String heuristic;
     
 
     public static void main(String[] args) {
@@ -47,11 +51,13 @@ public class AmazonAI extends GamePlayer {
         player2.start(); */
     }
 
-    public AmazonAI(String userName, String passwd) {
+    public AmazonAI(String userName, String passwd, String heuristic) {
         this.userName = userName;
         this.passwd = passwd;
         this.gameGUI = new BaseGameGUI(this);
         this.gameClient = new GameClient(userName, passwd, this);
+        queenLocations=new ArrayList<int[]>();
+        this.heuristic=heuristic;
         
     }
 
@@ -60,13 +66,13 @@ public class AmazonAI extends GamePlayer {
         if (gameGUI != null) {
             gameGUI.setRoomInformation(gameClient.getRoomList());
         }
-        gameClient.joinRoom("Oyama Lake");
+        gameClient.joinRoom("Bear Lake");
     }
 
     @Override
     public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
-        System.out.println("Game message received ; Type: " + messageType);
-        System.out.println("Message Details: " + msgDetails);
+        System.out.println("Game message received ; Type: " + messageType );
+        System.out.println("Message Details: " + msgDetails );
 
         if (GameMessage.GAME_STATE_BOARD.equals(messageType)) {
             ArrayList<Integer> gameState = (ArrayList<Integer>) msgDetails.get("game-state");
@@ -78,17 +84,19 @@ public class AmazonAI extends GamePlayer {
                         boardState[i][j] = gameState.get(11+i * 11 + j + 1);
                     }
                 }
-                printBoard();
+                
                 if (gameGUI != null) {
                     gameGUI.setGameState(gameState);
                 }
+                initializeQueenLocations();
             }
+            
 
         } else if (GameMessage.GAME_ACTION_START.equals(messageType)) {
             isBlack = msgDetails.get("player-black").equals(userName);
             
-            if (!isBlack) {
-                Map<String, Object> move = makeMove(boardState, null);
+            if (isBlack) {
+                Map<String, Object> move = makeMove(new queenLocationBoardPair(boardState, queenLocations), null);
 
                 if (move != null) {
                     gameGUI.updateGameState(shiftPosUpByOne(move));
@@ -97,17 +105,19 @@ public class AmazonAI extends GamePlayer {
     
 
         } else if (GameMessage.GAME_ACTION_MOVE.equals(messageType)) {
-            System.out.println("Server acknowledged the move: " + msgDetails);
+            System.out.println("Server acknowledged the move: " + shiftPosDownByOne(msgDetails) );
             updateBoardState(msgDetails, true);
             gameGUI.updateGameState(msgDetails);
             Map<String, Object> prevMove=shiftPosDownByOne(msgDetails);
+            queenLocations=MoveGenerator.updateQueenLocationStatic(prevMove, queenLocations);
 
            
 
-            Map<String, Object> move = makeMove(boardState, prevMove);
+            Map<String, Object> move = makeMove(new queenLocationBoardPair(boardState, queenLocations), prevMove);
 
             if (move != null) {
                 gameGUI.updateGameState(shiftPosUpByOne(move));
+                printBoard();
             }
             
         }
@@ -126,10 +136,25 @@ public class AmazonAI extends GamePlayer {
         }
     }
 
-    private Map<String, Object> makeMove(int[][] gameState, Map<String, Object> incomingMove) {
+    private Map<String, Object> makeMove(queenLocationBoardPair qlbp, Map<String, Object> incomingMove) {
+    	String usedHeuristic=heuristic;
         System.out.println("AI is making a move...");
+        if ((heuristic=="mixed"&&endgameCheck())||(heuristic=="mobileAndKingTerritoryMixed"&&endgameCheck())) {
+        	usedHeuristic="minimumDistance";
+        	
+        	System.out.println("Endgame detected! Switching to Minimum Distance");
+        }
+        if (heuristic=="mixed"&!endgameCheck()) {
+        	usedHeuristic="mobility";
+        	
+        }
+        
 
-        Map<String, Object> move = IterativeDeepening.iterativeDeepeningSearch(boardState, isBlack, BOARD_SIZE, incomingMove).getMove();
+        valueMovePair vmp = IterativeDeepening.iterativeDeepeningSearch(qlbp, isBlack, 28, incomingMove, usedHeuristic);
+        Map<String, Object> move=null;
+        if (vmp!=null) {
+        	move=vmp.getMove();
+        }
         if (move == null) {
             System.out.println("No valid move found, game over.");
             return null;
@@ -150,9 +175,55 @@ public class AmazonAI extends GamePlayer {
         gameClient.sendMoveMessage(adjustedQueenCurPos, adjustedQueenNewPos, adjustedArrowNewPos);
 
         updateBoardState(move, false);
+        updateQueenLocation(move, queenLocations);
         
-        printBoard();
+        
         return move;
+    }
+    
+    private boolean endgameCheck() {
+    	boolean mobilityCondition=(MoveGenerator.generateAllQueenMoves(new queenLocationBoardPair(boardState, queenLocations), isBlack).size()+MoveGenerator.generateAllQueenMoves(new queenLocationBoardPair(boardState, queenLocations), !isBlack).size()<=40);
+    	int whiteReachable = countReachableSquares((new queenLocationBoardPair (boardState, queenLocations)).getQueenLocations(false), boardState);
+        int blackReachable = countReachableSquares((new queenLocationBoardPair (boardState, queenLocations)).getQueenLocations(true), boardState);
+        int totalReachable = whiteReachable + blackReachable;
+        boolean reachableCondition=(totalReachable<=60);
+        return mobilityCondition||reachableCondition;
+    }
+    static int countReachableSquares(List<int[]> queens, int[][] board) {
+    	int boardSize = board.length;
+        int[][] distances = new int[boardSize][boardSize];
+        for (int i = 0; i < boardSize; i++) {
+            Arrays.fill(distances[i], Integer.MAX_VALUE);
+        }
+        
+        int reachableSquares = 0;
+        for (int[] queen : queens) {
+            Queue<int[]> queue = new LinkedList<>();
+            queue.offer(new int[]{queen[0], queen[1]});
+            distances[queen[0]][queen[1]] = 0;
+            
+            int[] dx = {-1, 1, 0, 0, -1, -1, 1, 1};
+            int[] dy = {0, 0, -1, 1, -1, 1, -1, 1};
+            
+            while (!queue.isEmpty()) {
+                int[] current = queue.poll();
+                int x = current[0], y = current[1];
+                
+                for (int i = 0; i < 8; i++) {
+                    int newX = x + dx[i];
+                    int newY = y + dy[i];
+                    
+                    while (newX >= 0 && newX < boardSize && newY >= 0 && newY < boardSize && board[newX][newY] == 0 && distances[newX][newY] == Integer.MAX_VALUE) {
+                        distances[newX][newY] = distances[x][y] + 1;
+                        queue.offer(new int[]{newX, newY});
+                        reachableSquares++;
+                        newX += dx[i];
+                        newY += dy[i];
+                    }
+                }
+            }
+        }
+        return reachableSquares;
     }
 
     private void updateBoardState(Map<String, Object> move, boolean incomingMove) {
@@ -191,6 +262,29 @@ public class AmazonAI extends GamePlayer {
         adjustedMap.put("arrow-position", adjustedArrowNewPos);
         return adjustedMap;
     }
+    public void initializeQueenLocations() {
+    	queenLocations.addAll(MoveGenerator.findQueens(boardState, true));
+    	queenLocations.addAll(MoveGenerator.findQueens(boardState, false));
+    	
+    }
+    public void updateQueenLocation(Map<String, Object> move, List<int[]> queenLocations) {
+    	ArrayList<Integer> qcurr = (ArrayList<Integer>) move.get("queen-position-current");
+        ArrayList<Integer> qnew = (ArrayList<Integer>) move.get("queen-position-next");
+        int i=0;
+        List<int[]> newQueenLocations= new ArrayList<int[]>(queenLocations);
+        for(int[] queen : queenLocations) {
+        	if (qcurr.get(0)==queen[0]&&qcurr.get(1)==queen[1]) {
+        		newQueenLocations.get(i)[0]=qnew.get(0);
+        		newQueenLocations.get(i)[1]=qnew.get(1);
+        		
+        	}
+        	i++;
+        }
+        this.queenLocations=newQueenLocations;
+        
+        
+    }
+    
     
 
     @Override

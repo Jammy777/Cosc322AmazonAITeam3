@@ -78,7 +78,7 @@ public class MoveGeneratorTest {
         board[3][3] = 1; // White Queen
         board[6][6] = 2; // Black Queen
 
-        int score = MoveGenerator.evaluateBoard(board, true);
+        int score = Heuristics.mobilityTesting(board, true);
 
         assertEquals(0, score, "Expected evaluation score to be 0 since both players have equal mobility.");
     }
@@ -113,6 +113,91 @@ public class MoveGeneratorTest {
         		&movesGenerated.contains(move3)
         		&movesGenerated.contains(move4)
         		&movesGenerated.size()==4);
+    }
+   
+    
+
+
+    @Test
+    void testUpdateQueenLocationStatic() {
+        // Initialize queen locations
+        List<int[]> queenLocations = new ArrayList<>();
+        queenLocations.add(new int[]{2, 3});
+        queenLocations.add(new int[]{5, 6});
+        queenLocations.add(new int[]{8, 9});
+        queenLocations.add(new int[]{9, 9});
+        
+        // Define the move
+        Map<String, Object> move = new HashMap<>();
+        move.put("queen-position-current", new ArrayList<>(Arrays.asList(5, 6)));
+        move.put("queen-position-next", new ArrayList<>(Arrays.asList(6, 7)));
+
+        // Call the method
+        List<int[]> updatedQueens = MoveGenerator.updateQueenLocationStatic(move, queenLocations);
+
+        // Check if the queen moved correctly
+        assertArrayEquals(new int[]{2, 3}, updatedQueens.get(0)); // Unchanged
+        assertArrayEquals(new int[]{6, 7}, updatedQueens.get(1)); // Updated
+        assertArrayEquals(new int[]{8, 9}, updatedQueens.get(2)); // Unchanged
+        assertArrayEquals(new int[]{9, 9}, updatedQueens.get(3));
+    }
+    @Test
+    public void testSimulateMove() {
+        // Initial board setup
+        int[][] board = new int[10][10];
+        for (int i = 0; i < 10; i++) {
+            Arrays.fill(board[i], 0);
+        }
+        
+        
+        board[2][2] = 1;
+        board[3][2] = 1;
+        board[4][2] = 1;
+        board[5][2] = 1;
+        board[2][3] = 2;
+        board[2][4] = 2;
+        board[2][5] = 2;
+        board[2][6] = 2;
+        
+        // Initial queen locations
+        List<int[]> queenLocations = new ArrayList<>();
+        queenLocations.add(new int[]{2, 2});
+        queenLocations.add(new int[]{3, 2});
+        queenLocations.add(new int[]{4, 2});
+        queenLocations.add(new int[]{5, 2});
+        queenLocations.add(new int[]{2, 3});
+        queenLocations.add(new int[]{2, 4});
+        queenLocations.add(new int[]{2, 5});
+        queenLocations.add(new int[]{2, 6});
+        
+        queenLocationBoardPair qlbp = new queenLocationBoardPair(board, queenLocations);
+        
+        // Define a move: move the queen from (2,2) to (1,1) and shoot an arrow at (1,2)
+        Map<String, Object> move = new HashMap<>();
+        move.put("queen-position-current", new ArrayList<>(Arrays.asList(2, 2)));
+        move.put("queen-position-next", new ArrayList<>(Arrays.asList(1, 1)));
+        move.put("arrow-position", new ArrayList<>(Arrays.asList(1, 2)));
+        
+        // Simulate the move
+        queenLocationBoardPair newQLBP = MoveGenerator.simulateMove(qlbp, move);
+        int[][] newBoard = newQLBP.getBoard();
+        
+        // Assertions to check the correctness of the move
+        assertEquals(0, newBoard[2][2], "The old queen position should be empty.");
+        assertEquals(1, newBoard[1][1], "The new queen position should contain the queen.");
+        assertEquals(3, newBoard[1][2], "The arrow position should be marked.");
+        
+        // Check updated queen locations
+        List<int[]> newQueenLocations = newQLBP.getQueenLocations();
+        assertEquals(8, newQueenLocations.size());
+        assertArrayEquals(new int[]{1, 1}, newQueenLocations.get(0));
+        assertArrayEquals(new int[]{3,2}, newQueenLocations.get(1));
+        assertArrayEquals(new int[]{4,2}, newQueenLocations.get(2));
+        assertArrayEquals(new int[]{5,2}, newQueenLocations.get(3));
+        assertArrayEquals(new int[]{2,3}, newQueenLocations.get(4));
+        assertArrayEquals(new int[]{2,4}, newQueenLocations.get(5));
+        assertArrayEquals(new int[]{2,5}, newQueenLocations.get(6));
+        assertArrayEquals(new int[]{2,6}, newQueenLocations.get(7));
     }
     
    
